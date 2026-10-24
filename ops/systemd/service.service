@@ -1,0 +1,44 @@
+# Written by `aso install` from aso.toml. Don't edit: change aso.toml and run
+# `aso reload` (or `aso install`), which writes this file again.
+[Unit]
+Description=aso {{name}}: {{description}}
+After={{after}}
+Wants={{wants}}
+# Keep trying however many times it fails.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User={{user}}
+Group={{group}}
+# The settings: KEY=VALUE lines that aso writes from aso.toml.
+EnvironmentFile={{env_file}}
+WorkingDirectory={{workdir}}
+# On every start, the manager's restart after a crash included, the log is moved
+# aside if it is over [service] log_max_size_mb (the caps are in the env file)
+# before the program opens it. A failed rotation never stops the start.
+ExecStart=/bin/sh -c '{{exe}} logs rotate {{log}}; exec {{program}}{{args}} >>{{log}} 2>&1'
+{{reload_line}}
+# Start again when it exits with an error or is killed.
+Restart=on-failure
+RestartSec=5
+
+# A stop sends SIGTERM; after TimeoutStopSec the program is killed, and a kill is
+# a crash it has to recover from.
+KillSignal=SIGTERM
+TimeoutStopSec={{stop_secs}}
+
+# The only places it may write: its data and its log.
+ReadWritePaths={{rw_paths}}
+UMask=0077
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome={{protect_home}}
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

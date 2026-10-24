@@ -1,0 +1,16 @@
+# Written by `aso install` when redeem.payout is set. The timer starts it every
+# redeem.interval_hours; it runs the automatic redeem once and ends. aso writes
+# its own log (aso-redeem.log, with the size cap). It runs as root, like every aso
+# command that touches the wallet: the wallet file is root's, and fsp-mint's data
+# is written only by the running fsp-mint (export-esp asks it).
+[Unit]
+Description=aso: the automatic redeem (export-esp, receive, redeem, collect)
+After=network-online.target aso-fsp.service
+
+[Service]
+Type=oneshot
+Environment=HOME={{home}}
+ExecStart={{exe}} --dir {{dir}} --config {{config}} redeem run
+UMask=0077
+StandardOutput=null
+StandardError=null

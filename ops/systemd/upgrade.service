@@ -1,0 +1,16 @@
+# Written by `aso upgrade --at` or `aso upgrade --in`. It runs once, asks
+# nothing (the question was answered when it was scheduled), and removes itself
+# and its timer when it is done. `aso upgrade cancel` removes it too.
+# aso writes its own log (aso-upgrade.log, with the size cap), so the unit's
+# output is not kept.
+[Unit]
+Description=aso: the scheduled upgrade (aso upgrade)
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=HOME={{home}}
+ExecStart={{exe}} --dir {{dir}} --config {{config}} upgrade run-scheduled
+TimeoutStartSec=infinity
+StandardOutput=null
+StandardError=null

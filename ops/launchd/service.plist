@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Written by aso install from aso.toml. Don't edit: change aso.toml and run
+         aso reload (or aso install), which writes this file again. -->
+    <key>Label</key>
+    <string>org.servicepoints.{{name}}</string>
+
+    <!-- Not root. The settings are KEY=VALUE lines in the env file aso writes.
+         On every start the log is moved aside if it is over the cap (a failed
+         rotation never stops the start); exec then makes the program the
+         process launchd watches, so a stop signal reaches it directly, and its
+         output goes to the log opened after the rotation. -->
+    <key>UserName</key>
+    <string>{{user}}</string>
+    <key>GroupName</key>
+    <string>{{group}}</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>set -a; . '{{env_file}}'; set +a; '{{exe}}' logs rotate '{{log}}'; exec '{{program}}'{{args}} &gt;&gt;'{{log}}' 2&gt;&amp;1</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>{{workdir}}</string>
+
+    <!-- Start at boot, and start again when it exits with an error or is killed.
+         A clean exit (status 0, after a stop signal) is left alone. launchd waits
+         ThrottleInterval seconds between starts; it has no start order, so aso
+         start waits for air_server's health before it starts fsp-mint. -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <!-- After a stop signal (SIGTERM), wait this long before killing the program;
+         a kill is a crash it has to recover from. -->
+    <key>ExitTimeOut</key>
+    <integer>{{stop_secs}}</integer>
+
+    <key>Umask</key>
+    <integer>63</integer>
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

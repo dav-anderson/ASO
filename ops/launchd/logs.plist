@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Written by aso install. Every {{minutes}} minutes, while fsp-mint and
+         air_server run (they are meant never to stop, so the rotation at their
+         start is not enough): a log over [service] log_max_size_mb is copied
+         aside and emptied in place, and only the newest [service] log_keep .bak
+         files stay. The caps are in fsp-mint's env file, as for the rotation at
+         a start. It runs as the services' account, which owns the logs, and
+         stops nothing. -->
+    <key>Label</key>
+    <string>org.servicepoints.aso-logs</string>
+    <key>UserName</key>
+    <string>{{user}}</string>
+    <key>GroupName</key>
+    <string>{{group}}</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>set -a; . '{{env_file}}'; set +a; exec '{{exe}}' logs rotate --running {{logs}}</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>{{secs}}</integer>
+    <key>Umask</key>
+    <integer>63</integer>
+    <key>StandardOutPath</key>
+    <string>/dev/null</string>
+    <key>StandardErrorPath</key>
+    <string>/dev/null</string>
+</dict>
+</plist>

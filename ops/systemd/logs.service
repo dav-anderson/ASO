@@ -1,0 +1,21 @@
+# Written by `aso install`. The timer starts it every {{minutes}} minutes, while
+# fsp-mint and air_server run (they are meant never to stop, so the rotation at
+# their start is not enough): a log over [service] log_max_size_mb is copied
+# aside and emptied in place, and only the newest [service] log_keep .bak files
+# stay. The caps are in fsp-mint's env file, as for the rotation at a start. It
+# runs as the service account, which owns the logs, and stops nothing.
+[Unit]
+Description=aso: keep fsp-mint.log and air_server.log under their size cap
+
+[Service]
+Type=oneshot
+User={{user}}
+Group={{group}}
+EnvironmentFile={{env_file}}
+ExecStart={{exe}} logs rotate --running {{logs}}
+ReadWritePaths={{log_dir}}
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome={{protect_home}}

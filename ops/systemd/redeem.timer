@@ -1,0 +1,14 @@
+# Written by `aso install` when redeem.payout is set: the automatic redeem runs
+# every redeem.interval_hours, and 10 minutes after boot. A run that is missed
+# is not made up: the next one covers it, because export-esp hands out everything
+# kept and not yet exported.
+[Unit]
+Description=aso: when the automatic redeem runs
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec={{interval_hours}}h
+Unit=aso-redeem.service
+
+[Install]
+WantedBy=timers.target
