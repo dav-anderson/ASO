@@ -10,7 +10,7 @@
 
 use std::time::{Duration, Instant};
 
-use air_interface::{Managed, air};
+use air_minterface::{Managed, air};
 
 use crate::config::Aso;
 use crate::exec::{Exec, command_line};

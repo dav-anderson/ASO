@@ -5,13 +5,13 @@
 //! on the home folder of whoever runs aso. The service key is never typed on a
 //! command line: `redeem` gets `--service-key-file`.
 
-use air_interface::Managed;
+use air_minterface::Managed;
 
 use crate::config::Aso;
 use crate::exec::{Exec, Ran};
 use crate::generate;
 use crate::program::Program;
-use air_interface::files::find_binary;
+use air_minterface::files::find_binary;
 
 /// The ecash-wallet binary: the installed copy, else the file `wallet.bin` names.
 pub fn binary(aso: &Aso) -> String {

@@ -6,10 +6,10 @@
 //! stop a service**; they say so, and they ask before they act. `reload` sends
 //! the services' reload signal and rewrites files, and stops nothing.
 
-use air_interface::release;
-use air_interface::schedule::{self, DEFAULT_LATE_SECS, Due, Pending, Where};
-use air_interface::upgrade::{self, Options};
-use air_interface::{Managed, Probe};
+use air_minterface::release;
+use air_minterface::schedule::{self, DEFAULT_LATE_SECS, Due, Pending, Where};
+use air_minterface::upgrade::{self, Options};
+use air_minterface::{Managed, Probe};
 use jiff::Zoned;
 use jiff::tz::TimeZone;
 

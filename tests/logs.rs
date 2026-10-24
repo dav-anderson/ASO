@@ -1,6 +1,6 @@
 //! The caps on every log aso writes or sends a child's output to, through the
 //! command line and the generated units. (The rotation itself, `Log::open` and
-//! the pruning are air-interface's tests.)
+//! the pruning are air-minterface's tests.)
 
 mod common;
 

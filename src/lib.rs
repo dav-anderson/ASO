@@ -6,7 +6,7 @@
 //! It links none of the family's crates: it runs the programs and reads what
 //! they print.
 
-pub use air_interface::{exec, logs, schedule, template};
+pub use air_minterface::{exec, logs, schedule, template};
 
 pub mod ask;
 pub mod audit;

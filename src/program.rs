@@ -1,6 +1,6 @@
 //! The three programs aso installs, and what aso knows of each. What it shares
 //! with spi (name, section, pin, where it is installed, ...) is in
-//! [`crate::interface`], as the [`air_interface::Managed`] impl.
+//! [`crate::interface`], as the [`air_minterface::Managed`] impl.
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Program {

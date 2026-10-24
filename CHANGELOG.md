@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1] - 2026-10-24
+
+The shared crate is renamed air-minterface (it was air-interface): aso now
+depends on `air-minterface = { git = "https://github.com/dav-anderson/air-minterface.git", tag = "v0.2.0" }`,
+the code imports `air_minterface`, and the line `aso versions` shows is named
+`air-minterface`. No other change.
+
 ## [0.2.0] - 2026-10-24
 
 ROADMAP item 32. The code aso shared with spi is the new crate

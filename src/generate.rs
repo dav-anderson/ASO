@@ -4,7 +4,7 @@
 //! as written, named by aso or not; a setting it does not set is left to the
 //! component's own default.
 
-use air_interface::air;
+use air_minterface::air;
 use toml::{Table, Value};
 
 use crate::config::Aso;

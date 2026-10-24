@@ -37,8 +37,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use air_interface::Managed;
-use air_interface::version::Tags;
+use air_minterface::Managed;
+use air_minterface::version::Tags;
 
 use crate::config::Aso;
 use crate::ctl;
@@ -85,7 +85,7 @@ pub fn resume_ids(text: &str) -> Vec<String> {
 
 fn make_private_dir(dir: &Path) -> Result<(), String> {
     fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
-    air_interface::files::set_mode(dir, 0o700)
+    air_minterface::files::set_mode(dir, 0o700)
 }
 
 /// Why the installed fsp-mint must not be asked to export, if it must not: it

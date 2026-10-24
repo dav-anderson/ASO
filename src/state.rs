@@ -11,9 +11,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use air_interface::Managed;
-use air_interface::files::replace_file;
-use air_interface::record::{self, Installed};
+use air_minterface::Managed;
+use air_minterface::files::replace_file;
+use air_minterface::record::{self, Installed};
 use serde::{Deserialize, Serialize};
 
 use crate::config::Aso;
@@ -52,7 +52,7 @@ pub fn write(aso: &Aso, state: &State) -> Result<(), String> {
 }
 
 /// What aso recorded of a program it put in place: the version and the SHA-256
-/// of the file ([`air_interface::record`]). fsp-mint (0.8.0 too) and air_server
+/// of the file ([`air_minterface::record`]). fsp-mint (0.8.0 too) and air_server
 /// print no version, so this record is the only way aso knows what they are.
 pub fn record_path(aso: &Aso, program: Program) -> PathBuf {
     aso.dir

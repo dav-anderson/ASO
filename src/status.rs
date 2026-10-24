@@ -7,7 +7,7 @@
 //! only when air_server and fsp-mint answer their health checks and the wallet
 //! is funded (PSP above zero); step d is recommended and does not hold it back.
 
-use air_interface::Managed;
+use air_minterface::Managed;
 
 use crate::config::Aso;
 use crate::ctl;

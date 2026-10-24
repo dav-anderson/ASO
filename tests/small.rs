@@ -1,5 +1,5 @@
 //! The small pieces: editing aso.toml, and that the README documents every
-//! setting. (Release tags, pins and schedule times are air-interface's tests.)
+//! setting. (Release tags, pins and schedule times are air-minterface's tests.)
 
 mod common;
 

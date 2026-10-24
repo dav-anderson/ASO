@@ -1,7 +1,7 @@
 //! Editing `aso.toml` in place: setting a value while keeping the comments and
 //! the order of the file. The way a file is replaced (a copy to
 //! `aso.toml.<epoch>.bak` first, the newest `service.config_backups` kept, the
-//! new text whole and at once) is `air_interface::files::backup_and_replace`.
+//! new text whole and at once) is `air_minterface::files::backup_and_replace`.
 
 fn section_of(line: &str) -> Option<String> {
     let t = line.trim();

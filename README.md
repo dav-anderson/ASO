@@ -20,7 +20,7 @@ manager's files.
 
 The code aso shares with `spi` (downloading releases and checking their SHA-256,
 the upgrade with its rollback, scheduling, log rotation, service-file templates)
-is the [air-interface](https://github.com/dav-anderson/air-interface) crate, used
+is the [air-minterface](https://github.com/dav-anderson/air-minterface) crate, used
 by git tag; `aso versions` shows its version.
 
 ## Commands

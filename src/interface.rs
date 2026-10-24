@@ -1,4 +1,4 @@
-//! aso's side of air-interface: what the shared code needs to know about this
+//! aso's side of air-minterface: what the shared code needs to know about this
 //! operator ([`Operator`], implemented on [`Aso`]) and about each program
 //! ([`Managed`], implemented on [`Program`]). The shared code does the rest;
 //! the sentences that are aso's own wording are said here, so the output is
@@ -7,10 +7,10 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use air_interface::exec::Exec;
-use air_interface::schedule::Job;
-use air_interface::version::{Tags, program_version};
-use air_interface::{Managed, Operator, Say};
+use air_minterface::exec::Exec;
+use air_minterface::schedule::Job;
+use air_minterface::version::{Tags, program_version};
+use air_minterface::{Managed, Operator, Say};
 
 use crate::config::Aso;
 use crate::ctl::{self, Action};

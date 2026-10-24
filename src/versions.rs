@@ -2,7 +2,7 @@
 //!
 //! - **aso**: its own version. aso links no family crate, so it has no library
 //!   versions of its own.
-//! - **air-interface**: the version of the shared code aso uses to install,
+//! - **air-minterface**: the version of the shared code aso uses to install,
 //!   upgrade, schedule and log the programs (the same code spi uses).
 //! - **ecash-wallet**: `ecash-wallet --version`, whose first line is the program
 //!   and whose other lines are the libraries it was built with (sp-wire,
@@ -23,16 +23,16 @@
 
 use std::path::Path;
 
-use air_interface::exec::Exec;
-use air_interface::files::{find_binary, sha256_file};
-use air_interface::version::{Line, known, program_version, unknown};
-use air_interface::{Managed, version};
+use air_minterface::exec::Exec;
+use air_minterface::files::{find_binary, sha256_file};
+use air_minterface::version::{Line, known, program_version, unknown};
+use air_minterface::{Managed, version};
 
 use crate::config::Aso;
 use crate::program::Program;
 use crate::state;
 
-pub use air_interface::version::render;
+pub use air_minterface::version::render;
 
 fn recorded_line(aso: &Aso, program: Program, label: &str, binary: &Path) -> Line {
     let sha = match sha256_file(binary) {

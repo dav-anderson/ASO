@@ -23,8 +23,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use air_interface::files::{backup_and_replace, set_mode};
-use air_interface::release::Source;
+use air_minterface::files::{backup_and_replace, set_mode};
+use air_minterface::release::Source;
 
 use crate::ask::Ask;
 use crate::binary;

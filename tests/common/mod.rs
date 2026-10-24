@@ -12,9 +12,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use air_interface::Managed;
-use air_interface::files::sha256_file;
-use air_interface::release::{Download, Source};
+use air_minterface::Managed;
+use air_minterface::files::sha256_file;
+use air_minterface::release::{Download, Source};
 use aso::ask::Ask;
 use aso::cli::{Done, Env};
 use aso::config::{Aso, Inputs};

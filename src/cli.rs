@@ -12,10 +12,10 @@ use crate::ask::Ask;
 use crate::audit;
 use crate::commands::{self, PinPolicy, UpgradeArgs, When};
 use crate::config::{Aso, Inputs};
-use air_interface::Managed;
-use air_interface::files::replace_file;
-use air_interface::github::Github;
-use air_interface::release::Source;
+use air_minterface::Managed;
+use air_minterface::files::replace_file;
+use air_minterface::github::Github;
+use air_minterface::release::Source;
 
 use crate::exec::Exec;
 use crate::install::{self, Ctx, Funding, Options};

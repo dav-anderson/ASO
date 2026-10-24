@@ -5,7 +5,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use air_interface::files::{replace_file, set_mode};
+use air_minterface::files::{replace_file, set_mode};
 
 use crate::config::Aso;
 use crate::generate;

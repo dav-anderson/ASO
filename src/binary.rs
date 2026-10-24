@@ -1,6 +1,6 @@
 //! Getting a program's binary and putting it in place for `aso install`. The
 //! engine that decides the target, obtains and checks the build and swaps it in
-//! is air-interface's ([`air_interface::upgrade`]); this is the install's use of
+//! is air-minterface's ([`air_minterface::upgrade`]); this is the install's use of
 //! it, and aso's record of what was installed.
 //!
 //! **The target.** A program's `version` in aso.toml is an optional pin. With no
@@ -12,12 +12,12 @@
 
 use std::path::Path;
 
-use air_interface::exec::Exec;
-use air_interface::files::{find_binary, sha256_file};
-use air_interface::release::Source;
-use air_interface::upgrade::{decide, obtain, swap_in};
-use air_interface::version::same_version;
-use air_interface::{Managed, record};
+use air_minterface::exec::Exec;
+use air_minterface::files::{find_binary, sha256_file};
+use air_minterface::release::Source;
+use air_minterface::upgrade::{decide, obtain, swap_in};
+use air_minterface::version::same_version;
+use air_minterface::{Managed, record};
 
 use crate::config::Aso;
 use crate::program::Program;
