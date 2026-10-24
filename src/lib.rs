@@ -6,6 +6,8 @@
 //! It links none of the family's crates: it runs the programs and reads what
 //! they print.
 
+pub use air_interface::{exec, logs, schedule, template};
+
 pub mod ask;
 pub mod audit;
 pub mod binary;
@@ -14,24 +16,17 @@ pub mod commands;
 pub mod config;
 pub mod ctl;
 pub mod edit;
-pub mod exec;
-pub mod fetch;
 pub mod files;
 pub mod fsp;
 pub mod generate;
 pub mod httpc;
 pub mod install;
-pub mod logs;
+pub mod interface;
 pub mod outcome;
-pub mod perm;
 pub mod program;
 pub mod redeem;
-pub mod release;
-pub mod schedule;
 pub mod service;
 pub mod state;
 pub mod status;
-pub mod template;
-pub mod upgrade;
 pub mod versions;
 pub mod wallet;

@@ -23,6 +23,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use air_interface::files::{backup_and_replace, set_mode};
+use air_interface::release::Source;
+
 use crate::ask::Ask;
 use crate::binary;
 use crate::config::Aso;
@@ -33,9 +36,7 @@ use crate::files;
 use crate::fsp;
 use crate::generate;
 use crate::outcome::Outcome;
-use crate::perm;
 use crate::program::Program;
-use crate::release::Source;
 use crate::service;
 use crate::state;
 use crate::status::{self, Step};
@@ -45,7 +46,7 @@ use crate::wallet;
 pub struct Ctx<'a> {
     pub aso: &'a Aso,
     pub exec: &'a dyn Exec,
-    pub source: &'a dyn Source,
+    pub source: &'a dyn Source<Program>,
     /// The `aso` binary the units run.
     pub exe: PathBuf,
     /// The `aso.toml` this run loaded.
@@ -248,7 +249,7 @@ pub fn prepare(ctx: &Ctx) -> Result<Vec<String>, String> {
         crate::redeem::handover_dir(aso),
     ] {
         fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
-        perm::set_mode(&dir, 0o700)?;
+        set_mode(&dir, 0o700)?;
     }
     for dir in [aso.data_dir().join("air"), aso.fsp_base(), aso.log_dir()] {
         chown(ctx, &dir)?;
@@ -479,11 +480,12 @@ pub fn do_backup(ctx: &Ctx, service: &str, psp: &str) -> Result<Vec<String>, Str
 pub fn set_payout(ctx: &Ctx, payout: &str) -> Result<String, String> {
     let text = fs::read_to_string(&ctx.config).unwrap_or_default();
     let edited = edit::set_value(&text, "redeem", "payout", payout);
-    let backup = edit::backup_and_replace(
+    let backup = backup_and_replace(
         &ctx.config,
         &edited,
         ctx.now,
         ctx.aso.whole("service.config_backups") as usize,
+        "aso.toml",
     )?;
     Ok(format!(
         "payout set to {payout} in {} (the old file is {})",

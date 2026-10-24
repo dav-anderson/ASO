@@ -2,6 +2,8 @@
 //!
 //! - **aso**: its own version. aso links no family crate, so it has no library
 //!   versions of its own.
+//! - **air-interface**: the version of the shared code aso uses to install,
+//!   upgrade, schedule and log the programs (the same code spi uses).
 //! - **ecash-wallet**: `ecash-wallet --version`, whose first line is the program
 //!   and whose other lines are the libraries it was built with (sp-wire,
 //!   mint-core, air), shown as `ecash-wallet/sp-wire` and so on. They are exact
@@ -19,112 +21,21 @@
 //! Every line is a version or `unknown` with the reason. Nothing is started,
 //! stopped or written.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use serde::Serialize;
+use air_interface::exec::Exec;
+use air_interface::files::{find_binary, sha256_file};
+use air_interface::version::{Line, known, program_version, unknown};
+use air_interface::{Managed, version};
 
 use crate::config::Aso;
-use crate::exec::Exec;
 use crate::program::Program;
 use crate::state;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct Line {
-    pub name: String,
-    /// `x.y.z`, or `unknown`.
-    pub version: String,
-    /// Where the version came from, or why it is unknown.
-    pub note: String,
-}
-
-fn known(name: &str, version: &str, note: &str) -> Line {
-    Line {
-        name: name.into(),
-        version: version.into(),
-        note: note.into(),
-    }
-}
-
-fn unknown(name: &str, why: impl Into<String>) -> Line {
-    known(name, "unknown", &why.into())
-}
-
-/// The program's own version from the first line of its `--version`:
-/// `<name> <version>`.
-pub fn program_version(name: &str, first_line: &str) -> Option<String> {
-    let mut words = first_line.split_whitespace();
-    (words.next()? == name).then(|| words.next().map(str::to_string))?
-}
-
-/// Whether two versions are the same number: `1.0` and `1.0.0` are.
-pub fn same_version(a: &str, b: &str) -> bool {
-    let parts = |v: &str| -> Option<Vec<u64>> {
-        let mut n: Vec<u64> = v
-            .split('.')
-            .map(|p| p.parse().ok())
-            .collect::<Option<Vec<_>>>()?;
-        while n.len() < 3 {
-            n.push(0);
-        }
-        Some(n)
-    };
-    match (parts(a), parts(b)) {
-        (Some(x), Some(y)) => x == y,
-        _ => false,
-    }
-}
-
-/// The version a program reports for the binary at `path`, or why it cannot.
-/// ecash-wallet says so itself; fsp-mint and air_server only through aso's
-/// record of that exact file.
-pub fn reported(
-    aso: &Aso,
-    exec: &dyn Exec,
-    program: Program,
-    path: &Path,
-) -> Result<String, String> {
-    if program != Program::Wallet {
-        return state::recorded_version(aso, program, path).ok_or_else(|| {
-            format!(
-                "aso has no record of the version of {} ({} prints no version)",
-                path.display(),
-                program.name()
-            )
-        });
-    }
-    let ran = exec.run(&path.display().to_string(), &["--version".to_string()], &[])?;
-    if !ran.ok() {
-        return Err(format!(
-            "`{} --version` failed: {}",
-            path.display(),
-            ran.last_line()
-        ));
-    }
-    let first = ran.stdout.lines().next().unwrap_or("");
-    program_version(program.name(), first).ok_or_else(|| {
-        format!(
-            "`{} --version` printed `{first}`, which has no version",
-            path.display()
-        )
-    })
-}
-
-/// The binary `spec` names (a path, or a name on PATH), as an absolute path.
-pub fn find_binary(spec: &str) -> Option<PathBuf> {
-    let found = if spec.contains('/') {
-        let p = PathBuf::from(spec);
-        p.is_file().then_some(p)
-    } else {
-        let path = std::env::var_os("PATH")?;
-        std::env::split_paths(&path)
-            .map(|d| d.join(spec))
-            .find(|p| p.is_file())
-    };
-    found.and_then(|p| std::fs::canonicalize(p).ok())
-}
+pub use air_interface::version::render;
 
 fn recorded_line(aso: &Aso, program: Program, label: &str, binary: &Path) -> Line {
-    let sha = match state::sha256_file(binary) {
+    let sha = match sha256_file(binary) {
         Ok(s) => s,
         Err(e) => return unknown(label, e),
     };
@@ -216,11 +127,14 @@ fn service_lines(aso: &Aso, program: Program, label: &str, binary: &Path) -> Vec
 
 /// Every program and library, in order.
 pub fn versions(aso: &Aso, exec: &dyn Exec) -> Vec<Line> {
-    let mut out = vec![known(
-        "aso",
-        env!("CARGO_PKG_VERSION"),
-        "this program (it links none of the family crates)",
-    )];
+    let mut out = vec![
+        known(
+            "aso",
+            env!("CARGO_PKG_VERSION"),
+            "this program (it links none of the family crates)",
+        ),
+        version::crate_line(),
+    ];
     for program in [Program::Fsp, Program::Wallet, Program::Air] {
         let name = program.name();
         let installed = program.installed_path(aso);
@@ -247,15 +161,6 @@ pub fn versions(aso: &Aso, exec: &dyn Exec) -> Vec<Line> {
             }
             Some(p) => out.extend(service_lines(aso, program, &label, &p)),
         }
-    }
-    out
-}
-
-/// Text for a person.
-pub fn render(lines: &[Line]) -> String {
-    let mut out = String::new();
-    for l in lines {
-        out.push_str(&format!("{:<32} {:<10} {}\n", l.name, l.version, l.note));
     }
     out
 }

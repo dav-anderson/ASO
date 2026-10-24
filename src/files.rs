@@ -5,11 +5,13 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use air_interface::files::{replace_file, set_mode};
+
 use crate::config::Aso;
 use crate::generate;
 use crate::program::Program;
 use crate::service;
-use crate::state::{self, State};
+use crate::state::State;
 
 /// Every generated file, as `(path, text)`: fsp-mint's and ecash-wallet's
 /// settings, the env files, the service definitions, the logs job, the nginx
@@ -51,8 +53,8 @@ pub fn write_if_changed(path: &Path, text: &str) -> Result<bool, String> {
     if fs::read_to_string(path).is_ok_and(|have| have == text) {
         return Ok(false);
     }
-    state::replace_file(path, text.as_bytes())?;
-    crate::perm::set_mode(path, 0o644)?;
+    replace_file(path, text.as_bytes())?;
+    set_mode(path, 0o644)?;
     Ok(true)
 }
 

@@ -7,6 +7,8 @@
 //! only when air_server and fsp-mint answer their health checks and the wallet
 //! is funded (PSP above zero); step d is recommended and does not hold it back.
 
+use air_interface::Managed;
+
 use crate::config::Aso;
 use crate::ctl;
 use crate::exec::Exec;
@@ -14,7 +16,6 @@ use crate::generate;
 use crate::program::Program;
 use crate::service;
 use crate::state::{self, State};
-use crate::versions;
 use crate::wallet;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -233,7 +234,8 @@ pub fn collect(aso: &Aso, exec: &dyn Exec) -> Result<Status, String> {
         };
         let installed = program.installed_path(aso);
         let version = if installed.is_file() {
-            versions::reported(aso, exec, program, &installed)
+            program
+                .reported(aso, exec, &installed)
                 .unwrap_or_else(|_| "unknown".to_string())
         } else {
             "not installed".to_string()

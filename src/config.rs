@@ -22,6 +22,7 @@
 //! environment variable (aso's own settings only), `aso.toml`, the default.
 //! `aso config` prints each setting with its source.
 
+use air_interface::Managed;
 use std::path::PathBuf;
 
 use toml::{Table, Value};
@@ -942,7 +943,7 @@ impl Aso {
             }
             if is_version(&v) {
                 if let Some((min, why)) = program.min_version()
-                    && crate::release::is_newer(min, &v)
+                    && air_interface::version::Tags::Strict.is_newer(min, &v)
                 {
                     p.push(format!(
                         "{key} is `{v}`: aso needs {} {min} or later (it uses `{why}`). Pin {min} or later, or remove the line",

@@ -23,14 +23,16 @@
 
 use std::path::{Path, PathBuf};
 
+use air_interface::{Managed, air};
+
 use crate::config::Aso;
 use crate::generate;
 use crate::program::Program;
-use crate::template::{expand, plain};
+use crate::template::{expand, plain, protect_home};
 
 const SERVICE: &str = include_str!("../ops/systemd/service.service");
 const PLIST: &str = include_str!("../ops/launchd/service.plist");
-const NGINX: &str = include_str!("../ops/nginx-air.conf");
+const NGINX_HEADER: &str = include_str!("../ops/nginx-air.header");
 const REDEEM_SERVICE: &str = include_str!("../ops/systemd/redeem.service");
 const REDEEM_TIMER: &str = include_str!("../ops/systemd/redeem.timer");
 const REDEEM_PLIST: &str = include_str!("../ops/launchd/redeem.plist");
@@ -47,23 +49,6 @@ pub const LOGS_EVERY_MINUTES: u64 = 5;
 /// routes and flushes; the same figures as spi's mints. air_server stops at once.
 pub const FSP_STOP_SECS: u64 = 120;
 pub const AIR_STOP_SECS: u64 = 30;
-
-/// Whether a path is in a home folder, where a service can not go unless
-/// `ProtectHome` is relaxed.
-pub fn under_home(path: &str) -> bool {
-    path == "/root"
-        || ["/home/", "/root/", "/Users/"]
-            .iter()
-            .any(|p| path.starts_with(p))
-}
-
-fn protect_home(paths: &[&str]) -> &'static str {
-    if paths.iter().any(|p| under_home(p)) {
-        "read-only"
-    } else {
-        "yes"
-    }
-}
 
 /// The systemd unit file name of a service program.
 pub fn unit_file(aso: &Aso, program: Program) -> PathBuf {
@@ -199,7 +184,12 @@ pub fn nginx_file(aso: &Aso) -> Result<Option<(PathBuf, String)>, String> {
     }
     Ok(Some((
         aso.path("air.nginx_conf"),
-        expand("the nginx file", NGINX, &vars, false)?,
+        expand(
+            "the nginx file",
+            &air::nginx_template(NGINX_HEADER),
+            &vars,
+            false,
+        )?,
     )))
 }
 

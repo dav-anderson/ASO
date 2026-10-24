@@ -2,10 +2,12 @@
 //! `service-key`). The long-running `serve` is the service manager's job
 //! ([`crate::ctl`]), never aso's.
 
+use air_interface::Managed;
+
 use crate::config::Aso;
 use crate::exec::{Exec, Ran};
 use crate::program::Program;
-use crate::versions::find_binary;
+use air_interface::files::find_binary;
 
 /// The fsp-mint binary: the installed copy, else the file `fsp.bin` names.
 pub fn binary(aso: &Aso) -> String {

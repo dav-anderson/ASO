@@ -12,13 +12,15 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use air_interface::Managed;
+use air_interface::files::sha256_file;
+use air_interface::release::{Download, Source};
 use aso::ask::Ask;
 use aso::cli::{Done, Env};
 use aso::config::{Aso, Inputs};
 use aso::exec::{Exec, Ran};
 use aso::install::Ctx;
 use aso::program::Program;
-use aso::release::{Download, Source};
 
 /// A folder of its own for every call.
 pub fn scratch(name: &str) -> PathBuf {
@@ -204,7 +206,7 @@ impl FakeSource {
     }
 }
 
-impl Source for FakeSource {
+impl Source<Program> for FakeSource {
     fn tags(&self, program: Program) -> Result<Vec<String>, String> {
         match self.tags.iter().find(|(p, _)| *p == program) {
             Some((_, r)) => r.clone(),
@@ -229,7 +231,7 @@ impl Source for FakeSource {
         std::fs::write(&file, text).map_err(|e| e.to_string())?;
         let sha256 = match sha {
             Some(s) => s.clone(),
-            None => aso::state::sha256_file(&file)?,
+            None => sha256_file(&file)?,
         };
         Ok(Download { file, sha256 })
     }
@@ -277,7 +279,7 @@ impl Ask for Scripted {
 
 pub const NOW: i64 = 1_792_000_000;
 
-pub fn ctx<'a>(aso: &'a Aso, exec: &'a dyn Exec, source: &'a dyn Source) -> Ctx<'a> {
+pub fn ctx<'a>(aso: &'a Aso, exec: &'a dyn Exec, source: &'a dyn Source<Program>) -> Ctx<'a> {
     Ctx {
         aso,
         exec,
@@ -295,7 +297,7 @@ pub fn cli(
     text: &str,
     args: &[&str],
     exec: &dyn Exec,
-    source: &dyn Source,
+    source: &dyn Source<Program>,
     ask: &mut dyn Ask,
 ) -> Done {
     cli_at(NOW, dir, text, args, exec, source, ask)
@@ -308,7 +310,7 @@ pub fn cli_at(
     text: &str,
     args: &[&str],
     exec: &dyn Exec,
-    source: &dyn Source,
+    source: &dyn Source<Program>,
     ask: &mut dyn Ask,
 ) -> Done {
     std::fs::create_dir_all(dir).unwrap();

@@ -4,6 +4,7 @@
 //! as written, named by aso or not; a setting it does not set is left to the
 //! component's own default.
 
+use air_interface::air;
 use toml::{Table, Value};
 
 use crate::config::Aso;
@@ -68,23 +69,32 @@ pub fn fsp_env(aso: &Aso) -> String {
 
 /// air_server's environment file.
 pub fn air_env(aso: &Aso) -> String {
-    let mut text = format!(
-        "{HEADER}AIR_STORAGE={}\nAIR_WS_ADDR={}\nAIR_HEALTH_ADDR={}\n",
+    let (storage, ws_addr, health_addr) = (
         aso.text("air.storage"),
         aso.text("air.ws_addr"),
         aso.text("air.health_addr"),
     );
-    if let Some(identity) = aso.opt("air.identity") {
-        text.push_str(&format!("AIR_SECRET_FILE={identity}\n"));
-    }
-    if let (Some(addr), Some(cert), Some(key)) = (
+    let identity = aso.opt("air.identity");
+    let tls = match (
         aso.opt("air.tls_addr"),
         aso.opt("air.tls_cert"),
         aso.opt("air.tls_key"),
     ) {
-        text.push_str(&format!(
-            "AIR_TLS_ADDR={addr}\nAIR_TLS_CERT={cert}\nAIR_TLS_KEY={key}\n"
-        ));
+        (Some(addr), Some(cert), Some(key)) => Some((addr, cert, key)),
+        _ => None,
+    };
+    let env = air::Env {
+        identity: identity.as_deref(),
+        storage: &storage,
+        ws_addr: &ws_addr,
+        health_addr: &health_addr,
+        tls: tls
+            .as_ref()
+            .map(|(addr, cert, key)| air::Tls { addr, cert, key }),
+    };
+    let mut text = HEADER.to_string();
+    for (key, value) in env.pairs(air::IdentityAt::AfterHealth) {
+        text.push_str(&format!("{key}={value}\n"));
     }
     text.push_str(&log_caps(aso));
     text

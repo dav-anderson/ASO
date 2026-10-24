@@ -1,8 +1,6 @@
-//! The three programs aso installs, and what aso knows of each.
-
-use std::path::PathBuf;
-
-use crate::config::Aso;
+//! The three programs aso installs, and what aso knows of each. What it shares
+//! with spi (name, section, pin, where it is installed, ...) is in
+//! [`crate::interface`], as the [`air_interface::Managed`] impl.
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Program {
@@ -19,38 +17,6 @@ impl Program {
     /// wallet.
     pub const ALL: [Program; 3] = [Program::Air, Program::Fsp, Program::Wallet];
 
-    pub fn name(self) -> &'static str {
-        match self {
-            Program::Air => "air_server",
-            Program::Fsp => "fsp-mint",
-            Program::Wallet => "ecash-wallet",
-        }
-    }
-
-    pub fn parse(text: &str) -> Option<Program> {
-        Program::ALL.into_iter().find(|p| p.name() == text)
-    }
-
-    /// The `aso.toml` section that holds the program's `bin` and `version`.
-    pub fn section(self) -> &'static str {
-        match self {
-            Program::Air => "air",
-            Program::Fsp => "fsp",
-            Program::Wallet => "wallet",
-        }
-    }
-
-    /// The pin: the `version` `aso.toml` names for this program, if any.
-    pub fn pin(self, aso: &Aso) -> Option<String> {
-        aso.opt(&format!("{}.version", self.section()))
-    }
-
-    /// The `bin` setting: the operator's file, used until a release is installed
-    /// and for a program that has no releases.
-    pub fn bin(self, aso: &Aso) -> String {
-        aso.text(&format!("{}.bin", self.section()))
-    }
-
     /// The oldest release aso works with, and why; `None` for air_server, whose
     /// version is only the operator's note. fsp-mint 0.8.0 has `export-esp
     /// --serve-only`, which the automatic redeem needs so that it never writes
@@ -62,23 +28,6 @@ impl Program {
             Program::Fsp => Some(("0.8.0", "export-esp --serve-only")),
             Program::Wallet => Some(("0.7.0", "redeem --service-key-file")),
         }
-    }
-
-    /// Whether upstream publishes release binaries for this program. air_server
-    /// (ramp-stack) publishes none; when it does, this is the one place that
-    /// changes.
-    pub fn publishes(self) -> bool {
-        !matches!(self, Program::Air)
-    }
-
-    /// Whether the program runs as a service.
-    pub fn is_service(self) -> bool {
-        !matches!(self, Program::Wallet)
-    }
-
-    /// Where the service install keeps this program's binary.
-    pub fn installed_path(self, aso: &Aso) -> PathBuf {
-        aso.bin_dir().join(self.name())
     }
 
     /// The systemd unit name, and the launchd label without its prefix.

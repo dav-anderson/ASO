@@ -37,12 +37,14 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use air_interface::Managed;
+use air_interface::version::Tags;
+
 use crate::config::Aso;
 use crate::ctl;
 use crate::exec::Exec;
 use crate::fsp;
 use crate::program::Program;
-use crate::release;
 use crate::state;
 use crate::wallet;
 
@@ -83,7 +85,7 @@ pub fn resume_ids(text: &str) -> Vec<String> {
 
 fn make_private_dir(dir: &Path) -> Result<(), String> {
     fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
-    crate::perm::set_mode(dir, 0o700)
+    air_interface::files::set_mode(dir, 0o700)
 }
 
 /// Why the installed fsp-mint must not be asked to export, if it must not: it
@@ -93,7 +95,7 @@ fn fsp_too_old(aso: &Aso) -> Option<String> {
     let (min, why) = Program::Fsp.min_version()?;
     let binary = Program::Fsp.installed_path(aso);
     match state::recorded_version(aso, Program::Fsp, &binary) {
-        Some(v) if !release::is_newer(min, &v) => None,
+        Some(v) if !Tags::Strict.is_newer(min, &v) => None,
         Some(v) => Some(format!(
             "export-esp skipped: the installed fsp-mint is {v}, and aso needs {min} or later (`{why}`), so that the export is always done by the running fsp-mint. Run `aso upgrade fsp-mint`"
         )),

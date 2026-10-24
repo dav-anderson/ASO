@@ -6,20 +6,22 @@
 //! stop a service**; they say so, and they ask before they act. `reload` sends
 //! the services' reload signal and rewrites files, and stops nothing.
 
+use air_interface::release;
+use air_interface::schedule::{self, DEFAULT_LATE_SECS, Due, Pending, Where};
+use air_interface::upgrade::{self, Options};
+use air_interface::{Managed, Probe};
 use jiff::Zoned;
 use jiff::tz::TimeZone;
 
 use crate::ask::Ask;
 use crate::ctl::{self, Action};
 use crate::install::{self, Ctx};
+use crate::interface::unpinned;
 use crate::logs::{self, Log};
 use crate::outcome::Outcome;
 use crate::program::Program;
-use crate::release;
-use crate::schedule::{self, DEFAULT_LATE_SECS, Due, Pending, Where};
 use crate::state;
 use crate::status;
-use crate::upgrade::{self, Options};
 
 /// Said before any upgrade, and by `aso upgrade --help`.
 pub const UPGRADE_WARNING: &str = "An upgrade of air_server or fsp-mint is a BRIEF DOWNTIME: the old program is stopped and the new one started (the time it was down is reported). Nothing is upgraded while it runs.";
@@ -213,14 +215,15 @@ fn run_upgrade(
     aso: &crate::config::Aso,
     programs: &[Program],
     dry_run: bool,
-) -> upgrade::Upgraded {
+) -> upgrade::Upgraded<Program> {
     let opts = Options {
         dry_run,
         wait_secs: ctx.aso.whole("service.start_wait_secs"),
         source: ctx.source,
     };
-    upgrade::upgrade(aso, programs, &opts, ctx.exec, &|p| {
-        ctl::health(ctx.aso, p).up
+    upgrade::upgrade(aso, programs, &opts, ctx.exec, &|p| Probe {
+        up: ctl::health(ctx.aso, p).up,
+        version: None,
     })
 }
 
@@ -299,7 +302,7 @@ pub fn upgrade(ctx: &Ctx, args: &UpgradeArgs, ask: &mut dyn Ask) -> Outcome {
             reset.push(h.program);
         }
     }
-    let effective = release::unpinned(aso, &reset);
+    let effective = unpinned(aso, &reset);
     if args.dry_run {
         let plan = run_upgrade(ctx, &effective, &programs, true);
         plan.lines.into_iter().for_each(|l| out.say(l));
@@ -360,7 +363,9 @@ pub fn upgrade(ctx: &Ctx, args: &UpgradeArgs, ask: &mut dyn Ask) -> Outcome {
 pub fn upgrade_check(ctx: &Ctx) -> Outcome {
     let mut out = Outcome::new();
     let lines = release::check(ctx.aso, ctx.exec, ctx.source);
-    release::render(&lines).lines().for_each(|l| out.say(l));
+    release::render(&lines, "aso.toml", 13)
+        .lines()
+        .for_each(|l| out.say(l));
     let held = release::pinned(ctx.aso, ctx.source, &Program::ALL);
     release::pin_warning(&held)
         .into_iter()
@@ -402,6 +407,7 @@ pub fn run_scheduled(ctx: &Ctx) -> Outcome {
     let aso = ctx.aso;
     let epoch = u64::try_from(ctx.now).unwrap_or(0);
     let mut log = match Log::open(
+        "aso",
         &schedule::log_file(aso),
         aso.log_max_mb(),
         aso.log_keep(),
@@ -471,7 +477,7 @@ pub fn run_scheduled(ctx: &Ctx) -> Outcome {
                     }
                 }
             }
-            let effective = release::unpinned(aso, &reset);
+            let effective = unpinned(aso, &reset);
             let done = run_upgrade(ctx, &effective, &programs, false);
             done.lines.into_iter().for_each(|l| say(&mut out, l));
             if !done.ok {

@@ -11,8 +11,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use air_interface::Managed;
+use air_interface::files::replace_file;
+use air_interface::record::{self, Installed};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
 use crate::config::Aso;
 use crate::program::Program;
@@ -44,39 +46,14 @@ pub fn read(aso: &Aso) -> Result<State, String> {
     }
 }
 
-/// Write `bytes` to `path` as a whole: a temporary file beside it, then a rename.
-pub fn replace_file(path: &Path, bytes: &[u8]) -> Result<(), String> {
-    if let Some(dir) = path.parent() {
-        fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
-    }
-    let tmp = path.with_extension("tmp");
-    fs::write(&tmp, bytes).map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
-    fs::rename(&tmp, path).map_err(|e| format!("cannot replace {}: {e}", path.display()))
-}
-
 pub fn write(aso: &Aso, state: &State) -> Result<(), String> {
     let text = serde_json::to_string_pretty(state).map_err(|e| e.to_string())?;
     replace_file(&state_path(aso), format!("{text}\n").as_bytes())
 }
 
-/// The SHA-256 of a file, as hex.
-pub fn sha256_file(path: &Path) -> Result<String, String> {
-    let bytes = fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
-    Ok(Sha256::digest(&bytes)
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect())
-}
-
 /// What aso recorded of a program it put in place: the version and the SHA-256
-/// of the file. fsp-mint (0.8.0 too) and air_server print no version, so this record is
-/// the only way aso knows what they are.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Installed {
-    pub version: String,
-    pub sha256: String,
-}
-
+/// of the file ([`air_interface::record`]). fsp-mint (0.8.0 too) and air_server
+/// print no version, so this record is the only way aso knows what they are.
 pub fn record_path(aso: &Aso, program: Program) -> PathBuf {
     aso.dir
         .join("installed")
@@ -90,22 +67,16 @@ pub fn record_installed(
     version: &str,
     binary: &Path,
 ) -> Result<(), String> {
-    let record = Installed {
-        version: version.to_string(),
-        sha256: sha256_file(binary)?,
-    };
-    let text = serde_json::to_string_pretty(&record).map_err(|e| e.to_string())?;
-    replace_file(&record_path(aso, program), format!("{text}\n").as_bytes())
+    record::write(&record_path(aso, program), version, binary)
 }
 
 pub fn read_record(aso: &Aso, program: Program) -> Option<Installed> {
-    serde_json::from_slice(&fs::read(record_path(aso, program)).ok()?).ok()
+    record::read(&record_path(aso, program))
 }
 
 /// The version aso recorded for exactly this file, if it did.
 pub fn recorded_version(aso: &Aso, program: Program, binary: &Path) -> Option<String> {
-    let record = read_record(aso, program)?;
-    (sha256_file(binary).ok()? == record.sha256).then_some(record.version)
+    record::recorded(&record_path(aso, program), binary)
 }
 
 /// Whether a restart of `program` applies the setting `key`: air_server's

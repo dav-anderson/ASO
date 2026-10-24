@@ -452,8 +452,9 @@ fn audit_wraps_the_mint_audit_and_the_balance_and_exits_non_zero_on_a_failed_aud
 
 #[test]
 fn versions_says_where_each_version_came_from_or_why_it_is_unknown() {
-    // Fails if a version is guessed, the way it was read is not said, or an
-    // unreadable one is not "unknown" with a reason.
+    // Fails if a version is guessed, the way it was read is not said, an
+    // unreadable one is not "unknown" with a reason, or the version of the
+    // shared air-interface code is left out.
     let (w, src) = World::installed("versions");
     let (done, _) = w.run(&["versions"], &src, &mut Scripted::new(false));
     assert_eq!(done.code, 0);
@@ -476,6 +477,7 @@ fn versions_says_where_each_version_came_from_or_why_it_is_unknown() {
     );
     assert!(line("ecash-wallet").contains("0.7.0"));
     assert!(line("ecash-wallet/sp-wire").contains("0.5.1"));
+    assert!(line("air-interface").contains(" 0.1.0 "), "{}", done.out);
     assert!(
         line("fsp-mint/sp-wire").contains("unknown")
             && line("fsp-mint/sp-wire").contains("fsp-mint prints no version")

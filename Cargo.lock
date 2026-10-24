@@ -3,13 +3,24 @@
 version = 4
 
 [[package]]
-name = "aso"
+name = "air-interface"
 version = "0.1.0"
+source = "git+https://github.com/dav-anderson/air-interface.git?tag=v0.1.0#c8330e1bae7af8007a97d994b8745a1c9f62d3f2"
 dependencies = [
  "jiff",
  "serde",
  "serde_json",
  "sha2",
+]
+
+[[package]]
+name = "aso"
+version = "0.2.0"
+dependencies = [
+ "air-interface",
+ "jiff",
+ "serde",
+ "serde_json",
  "toml",
 ]
 

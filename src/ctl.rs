@@ -10,6 +10,8 @@
 
 use std::time::{Duration, Instant};
 
+use air_interface::{Managed, air};
+
 use crate::config::Aso;
 use crate::exec::{Exec, command_line};
 use crate::httpc;
@@ -157,7 +159,7 @@ pub fn health(aso: &Aso, program: Program) -> Health {
         },
         Ok((status, body)) => {
             let ok = match program {
-                Program::Air => httpc::air_healthy(status, &body),
+                Program::Air => air::healthy(status, &body),
                 _ => httpc::fsp_healthy(status, &body),
             };
             Health {

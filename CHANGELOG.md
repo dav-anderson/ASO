@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.2.0] - 2026-10-24
+
+ROADMAP item 32. The code aso shared with spi is the new crate
+[air-interface](https://github.com/dav-anderson/air-interface)
+(`air-interface = { git = ..., tag = "v0.1.0" }`).
+
+- The release source and its checksum check, the pin and `upgrade check` code,
+  the upgrade engine (swap, restart, wait, rollback), the schedule, the log
+  rotation (`Log`, `logs::rotate`, `rotate_running`), the template expander, the
+  file helpers and the AIR server's environment and nginx block are now
+  air-interface's. aso implements its two traits (`Operator` on `Aso`, `Managed`
+  on `Program`, in `src/interface.rs`) and keeps the commands, the prompts, its
+  wording (every upgrade message is as before), `httpc`, the units and its
+  settings. `src/exec.rs`, `template.rs`, `perm.rs`, `logs.rs`, `fetch.rs`,
+  `release.rs`, `schedule.rs` and `upgrade.rs` are gone from aso (`ops/nginx-air.header`
+  is new); `sha2` moved to air-interface. The modules are still reachable as
+  `aso::exec`, `aso::logs`, `aso::schedule` and `aso::template`.
+- `aso versions` shows an `air-interface` line.
+- The AIR server's health check (status 200 and the body `ok`, as aso always
+  required) is air-interface's, and spi now uses the same one.
+- Docs: aso is designed to run on a Linux system. macOS is supported only as a
+  development machine (README).
+- Tests: 84 before, 76 after. 8 moved to air-interface (log rotation, the
+  newest-backups rule, same-second rotations, the log a program opens, the
+  running-log copy, release tags, the pin line and the schedule times, which are
+  merged into the schedule tests there). The `aso logs rotate` command, the
+  units, the job and the install tests stay.
+
 ## [0.1.0] - 2026-10-23
 
 First version.

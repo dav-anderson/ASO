@@ -12,8 +12,16 @@ to the programs by their command lines and to their health listeners on this
 machine over loopback HTTP. It builds nothing from source: it installs release
 binaries (and air_server, which publishes none, from the file you give it).
 
-Works on macOS and Linux. Run the commands that touch the services as root
-(`sudo aso ...`): they write the service manager's files.
+**aso is designed to run on a Linux system** (systemd). macOS is supported only as
+a development machine: the launchd files and the macOS settings exist so that aso
+can be tried and tested on a Mac, not to run a production service. Run the
+commands that touch the services as root (`sudo aso ...`): they write the service
+manager's files.
+
+The code aso shares with `spi` (downloading releases and checking their SHA-256,
+the upgrade with its rollback, scheduling, log rotation, service-file templates)
+is the [air-interface](https://github.com/dav-anderson/air-interface) crate, used
+by git tag; `aso versions` shows its version.
 
 ## Commands
 

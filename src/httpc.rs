@@ -59,8 +59,3 @@ pub fn fsp_healthy(status: u16, body: &str) -> bool {
             .and_then(|v| v.get("status").and_then(|s| s.as_str()).map(|s| s == "ok"))
             .unwrap_or(false)
 }
-
-/// Whether an air_server health answer is the bare `ok` it sends.
-pub fn air_healthy(status: u16, body: &str) -> bool {
-    status == 200 && body.trim() == "ok"
-}

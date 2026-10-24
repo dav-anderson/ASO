@@ -12,15 +12,17 @@ use crate::ask::Ask;
 use crate::audit;
 use crate::commands::{self, PinPolicy, UpgradeArgs, When};
 use crate::config::{Aso, Inputs};
+use air_interface::Managed;
+use air_interface::files::replace_file;
+use air_interface::github::Github;
+use air_interface::release::Source;
+
 use crate::exec::Exec;
-use crate::fetch::CurlSource;
 use crate::install::{self, Ctx, Funding, Options};
 use crate::logs::{self, Log};
 use crate::outcome::Outcome;
 use crate::program::Program;
 use crate::redeem;
-use crate::release::Source;
-use crate::state;
 use crate::status;
 use crate::versions;
 
@@ -80,7 +82,7 @@ pub struct Env<'a> {
     /// The `aso` binary (the units run it).
     pub exe: PathBuf,
     /// Where releases come from; `None`: GitHub through curl.
-    pub source: Option<&'a dyn Source>,
+    pub source: Option<&'a dyn Source<Program>>,
 }
 
 /// The result of a command line.
@@ -381,7 +383,7 @@ pub fn run(args: &[String], env: &Env, exec: &dyn Exec, ask: &mut dyn Ask) -> Do
     let place = Place { dir, config };
     let mut started = Vec::new();
     if command == "install" && !place.config.is_file() {
-        match state::replace_file(&place.config, STARTER.as_bytes()) {
+        match replace_file(&place.config, STARTER.as_bytes()) {
             Ok(()) => started.push(format!(
                 "wrote a starter {} (every line a comment): edit it, then run `aso install` again to use what you set",
                 place.config.display()
@@ -410,8 +412,8 @@ pub fn run(args: &[String], env: &Env, exec: &dyn Exec, ask: &mut dyn Ask) -> Do
             };
         }
     };
-    let curl = CurlSource::new(&aso, exec);
-    let source: &dyn Source = env.source.unwrap_or(&curl);
+    let curl = Github::new(&aso, exec);
+    let source: &dyn Source<Program> = env.source.unwrap_or(&curl);
     let ctx = Ctx {
         aso: &aso,
         exec,
@@ -528,6 +530,7 @@ fn redeem_run(ctx: &Ctx) -> Done {
     let aso = ctx.aso;
     let epoch = u64::try_from(ctx.now).unwrap_or(0);
     let mut log = match Log::open(
+        "aso",
         &aso.log_dir().join("aso-redeem.log"),
         aso.log_max_mb(),
         aso.log_keep(),
