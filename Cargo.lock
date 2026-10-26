@@ -4,8 +4,8 @@ version = 4
 
 [[package]]
 name = "air-minterface"
-version = "0.2.0"
-source = "git+https://github.com/dav-anderson/air-minterface.git?tag=v0.2.0#c18a691feab7d8d42fc7735f775d613981114ef8"
+version = "0.3.0"
+source = "git+https://github.com/dav-anderson/air-minterface.git?tag=v0.3.0#2568ca3de14b795f755a2f21ed5a60c5ec60a9e3"
 dependencies = [
  "jiff",
  "serde",
@@ -15,7 +15,7 @@ dependencies = [
 
 [[package]]
 name = "aso"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "air-minterface",
  "jiff",

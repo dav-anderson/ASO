@@ -14,7 +14,8 @@ fn problems(text: &str) -> Vec<String> {
 #[test]
 fn defaults_are_the_components_own() {
     // Fails if a row of the FSP or WALLET table in config.rs drifts from the
-    // component's default, or the log caps stop being 50 MB and 4 files.
+    // component's default, or the log caps stop being 50 MB and 4 files, or the
+    // release keep stops being 2.
     let aso = load(&scratch("defaults"), "");
     assert_eq!(aso.text("fsp.server.bind"), "127.0.0.1:3200");
     assert_eq!(aso.text("fsp.server.network"), "main");
@@ -22,9 +23,11 @@ fn defaults_are_the_components_own() {
     assert_eq!(aso.whole("fsp.issue.max_items"), 1000);
     assert_eq!(aso.whole("fsp.air.held_reads"), 16);
     assert_eq!(aso.whole("wallet.air.attempts"), 3);
-    assert_eq!(aso.whole("wallet.psp.min_purchase"), 50);
+    assert!(aso.entry("wallet.psp.min_purchase").is_none());
     assert_eq!(aso.whole("service.log_max_size_mb"), 50);
     assert_eq!(aso.whole("service.log_keep"), 4);
+    assert_eq!(aso.whole("service.config_backups"), 5);
+    assert_eq!(aso.whole("release.keep"), 2);
     assert_eq!(aso.text("air.health_addr"), "127.0.0.1:5701");
 }
 
@@ -154,7 +157,7 @@ fn a_pin_on_a_release_candidate_is_refused_when_the_file_loads() {
 #[test]
 fn a_pin_older_than_what_aso_needs_is_refused_and_air_version_is_only_a_note() {
     // Fails if aso can be pinned to an fsp-mint without `export-esp
-    // --serve-only` or an ecash-wallet without `redeem --service-key-file`, or if
+    // --serve-only` or an ecash-wallet without `claim-psp` (0.8.0), or if
     // air.version (the operator's words for a binary with no releases) is
     // checked like a pin.
     for (section, version, needs) in [
@@ -165,8 +168,8 @@ fn a_pin_older_than_what_aso_needs_is_refused_and_air_version_is_only_a_note() {
         ),
         (
             "wallet",
-            "0.6.1",
-            "aso needs ecash-wallet 0.7.0 or later (it uses `redeem --service-key-file`)",
+            "0.7.2",
+            "aso needs ecash-wallet 0.8.0 or later (it uses `claim-psp`)",
         ),
     ] {
         let p = problems(&format!("[{section}]\nversion = \"{version}\"\n"));
@@ -190,7 +193,7 @@ fn a_pin_older_than_what_aso_needs_is_refused_and_air_version_is_only_a_note() {
 #[test]
 fn every_problem_is_listed_and_a_bad_file_loads_nothing() {
     // Fails if loading stops at the first problem, or a file with problems loads.
-    let p = problems("[service]\nlog_keep = 0\n[air]\nbogus = 1\n[nowhere]\nx = 1\n");
+    let p = problems("[service]\nlog_keep = 53\n[air]\nbogus = 1\n[nowhere]\nx = 1\n");
     assert_eq!(p.len(), 3, "{p:?}");
     let p = problems("[air]\nfee_read = 2\n[fsp.server]\nbind = \"0.0.0.0:1\"\n");
     assert_eq!(p.len(), 2, "{p:?}");
@@ -222,4 +225,112 @@ fn settings_that_need_a_restart_are_told_from_the_ones_that_do_not() {
             "127.0.0.1:3400".to_string()
         )]
     );
+}
+
+#[test]
+fn zero_keeps_everything_for_every_keep_setting_in_the_file_and_the_environment() {
+    // Fails if 0 is refused for any of the four (the old ranges started at 1), or
+    // the environment variable and the file disagree about it.
+    for (key, var) in [
+        ("service.log_keep", "ASO_SERVICE_LOG_KEEP"),
+        ("service.log_max_size_mb", "ASO_SERVICE_LOG_MAX_SIZE_MB"),
+        ("service.config_backups", "ASO_SERVICE_CONFIG_BACKUPS"),
+        ("release.keep", "ASO_RELEASE_KEEP"),
+    ] {
+        let (section, name) = key.split_once('.').unwrap();
+        let aso = load(&scratch("zero-file"), &format!("[{section}]\n{name} = 0\n"));
+        assert_eq!(aso.whole(key), 0, "{key} from the file");
+        let aso = try_load(&scratch("zero-env"), None, &[(var, "0")]).unwrap();
+        assert_eq!(aso.whole(key), 0, "{key} from {var}");
+        assert!(
+            aso.describe()
+                .contains(&format!("{key} = 0  [env {var}; reloads live]")),
+            "{key}"
+        );
+    }
+}
+
+#[test]
+fn the_upper_bounds_of_the_keep_settings_stand_and_a_negative_number_is_refused() {
+    // Fails if an upper bound moves (52, 10240, 100, 20) or 0 opens the range to
+    // a negative number.
+    for (file, message) in [
+        (
+            "[service]\nlog_keep = 53\n",
+            "service.log_keep = 53 must be 0 to 52",
+        ),
+        (
+            "[service]\nlog_max_size_mb = 10241\n",
+            "service.log_max_size_mb = 10241 must be 0 to 10240",
+        ),
+        (
+            "[service]\nconfig_backups = 101\n",
+            "service.config_backups = 101 must be 0 to 100",
+        ),
+        (
+            "[release]\nkeep = 21\n",
+            "release.keep = 21 must be 0 to 20",
+        ),
+        (
+            "[service]\nlog_keep = -1\n",
+            "service.log_keep = -1 must not be negative",
+        ),
+    ] {
+        assert_eq!(problems(file), vec![message.to_string()], "{file}");
+    }
+    let p = try_load(
+        &scratch("bound-env"),
+        None,
+        &[("ASO_SERVICE_LOG_KEEP", "53")],
+    )
+    .unwrap_err();
+    assert_eq!(
+        p,
+        vec![
+            "service.log_keep = 53 must be 0 to 52 (from the environment variable ASO_SERVICE_LOG_KEEP)"
+                .to_string()
+        ]
+    );
+    // The edges that stay.
+    let aso = load(
+        &scratch("edges"),
+        "[service]\nlog_keep = 52\nlog_max_size_mb = 10240\nconfig_backups = 100\n[release]\nkeep = 20\n",
+    );
+    assert_eq!(aso.whole("service.log_keep"), 52);
+    assert_eq!(aso.whole("service.log_max_size_mb"), 10_240);
+    assert_eq!(aso.whole("service.config_backups"), 100);
+    assert_eq!(aso.whole("release.keep"), 20);
+}
+
+#[test]
+fn the_wallet_min_purchase_setting_is_refused_as_removed() {
+    // Fails if the key passes through to ecash-wallet (which would then stop at
+    // its own start) or aso accepts it without a word. Nothing enforces a minimum.
+    assert_eq!(
+        problems("[wallet.psp]\nmin_purchase = 100\n"),
+        vec!["wallet.psp.min_purchase was removed in aso 0.3.0: buy-psp takes no amounts, so there is no purchase size to check. We recommend a PSP purchase of at least $5 (50 PSP): the PSP mint's fees come out of what a payment buys, so a smaller payment can buy little or nothing. Nothing enforces it. Remove it".to_string()]
+    );
+    // Another wallet setting still passes through.
+    let aso = load(&scratch("wallet-pass"), "[wallet.psp]\nfuture = 1\n");
+    assert_eq!(aso.whole("wallet.psp.future"), 1);
+}
+
+#[test]
+fn the_wallet_unpaid_key_days_default_to_90_and_reach_the_wallet() {
+    // Fails if wallet.psp.unpaid_key_days drifts from ecash-wallet's default (90),
+    // is not live, or a value set in aso.toml (0 keeps an unpaid purchase for
+    // ever) does not reach the wallet's own file.
+    let aso = load(&scratch("unpaid-default"), "");
+    assert_eq!(aso.whole("wallet.psp.unpaid_key_days"), 90);
+    assert!(
+        aso.describe()
+            .contains(&"wallet.psp.unpaid_key_days = 90  [default; reloads live]".to_string())
+    );
+    let aso = load(
+        &scratch("unpaid-set"),
+        "[wallet.psp]\nunpaid_key_days = 0\n",
+    );
+    assert_eq!(aso.whole("wallet.psp.unpaid_key_days"), 0);
+    let wallet = generate::wallet_toml(&aso).unwrap();
+    assert!(wallet.contains("[psp]\nunpaid_key_days = 0\n"), "{wallet}");
 }

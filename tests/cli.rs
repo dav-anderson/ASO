@@ -475,9 +475,9 @@ fn versions_says_where_each_version_came_from_or_why_it_is_unknown() {
             && line("air_server")
                 .contains("recorded by aso for this exact binary (air_server prints no version)")
     );
-    assert!(line("ecash-wallet").contains("0.7.0"));
-    assert!(line("ecash-wallet/sp-wire").contains("0.5.1"));
-    assert!(line("air-minterface").contains(" 0.2.0 "), "{}", done.out);
+    assert!(line("ecash-wallet").contains("0.8.0"));
+    assert!(line("ecash-wallet/sp-wire").contains("0.6.0"));
+    assert!(line("air-minterface").contains(" 0.3.0 "), "{}", done.out);
     assert!(
         line("fsp-mint/sp-wire").contains("unknown")
             && line("fsp-mint/sp-wire").contains("fsp-mint prints no version")

@@ -142,24 +142,24 @@ pub const SETTINGS: &[Setting] = &[
     ),
     s(
         "service.log_max_size_mb",
-        Whole(1, 10_240),
+        Whole(0, 10_240),
         "50",
         Live,
-        "A log bigger than this many MB is moved aside to <log>.<epoch>.bak when its program starts, or aso opens it.",
+        "A log bigger than this many MB is moved aside to <log>.<epoch>.bak when its program starts, or aso opens it. 0: a log is never moved aside.",
     ),
     s(
         "service.log_keep",
-        Whole(1, 52),
+        Whole(0, 52),
         "4",
         Live,
-        "How many of those .bak files are kept for each log; older ones are removed.",
+        "How many of those .bak files are kept for each log; older ones are removed. 0: every .bak file is kept.",
     ),
     s(
         "service.config_backups",
-        Whole(1, 100),
+        Whole(0, 100),
         "5",
         Live,
-        "How many aso.toml.<epoch>.bak copies are kept (one is made when an upgrade resets a pin).",
+        "How many aso.toml.<epoch>.bak copies are kept (one is made when an upgrade resets a pin). 0: every copy is kept.",
     ),
     s(
         "service.start_wait_secs",
@@ -313,7 +313,7 @@ pub const SETTINGS: &[Setting] = &[
         Text,
         "",
         Live,
-        "Pins ecash-wallet to this release (x.y.z), 0.7.0 or later. Empty: the newest tagged release.",
+        "Pins ecash-wallet to this release (x.y.z), 0.8.0 or later. Empty: the newest tagged release.",
     ),
     s(
         "redeem.payout",
@@ -338,10 +338,10 @@ pub const SETTINGS: &[Setting] = &[
     ),
     s(
         "release.keep",
-        Whole(1, 20),
-        "3",
+        Whole(0, 20),
+        "2",
         Live,
-        "How many downloaded releases of each program are kept in the aso folder; the installed one and the one before it always stay.",
+        "How many downloaded releases of each program are kept in the aso folder, the newest first; the installed one and the one before it always stay. 0: every release is kept.",
     ),
 ];
 
@@ -374,7 +374,7 @@ pub const FSP: &[(&str, &str, bool)] = &[
     ("storage.mint_state", "", false),
 ];
 
-/// ecash-wallet's settings (ecash-wallet 0.7.0 `config::SPECS`). The wallet reads
+/// ecash-wallet's settings (ecash-wallet 0.8.0 `config::SPECS`). The wallet reads
 /// its file on every run, so every one is live.
 pub const WALLET: &[(&str, &str, bool)] = &[
     ("storage.wallet", "", true),
@@ -388,8 +388,16 @@ pub const WALLET: &[(&str, &str, bool)] = &[
     ("air.attempts", "3", true),
     ("air.max_skew_secs", "300", true),
     ("air.timeout_secs", "10", true),
-    ("psp.min_purchase", "50", true),
+    ("psp.unpaid_key_days", "90", true),
 ];
+
+/// The wallet settings that were removed, with why: `[wallet.<section>]` keys
+/// (`psp.min_purchase`). A file that still sets one is refused with this text, not
+/// passed through, so an old file is never silently ignored.
+const WALLET_REMOVED: &[(&str, &str)] = &[(
+    "psp.min_purchase",
+    "buy-psp takes no amounts, so there is no purchase size to check. We recommend a PSP purchase of at least $5 (50 PSP): the PSP mint's fees come out of what a payment buys, so a smaller payment can buy little or nothing. Nothing enforces it",
+)];
 
 pub const NETWORKS: [&str; 4] = ["main", "regtest", "signet", "testnet"];
 
@@ -620,6 +628,14 @@ impl Aso {
                     if v.is_table() {
                         problems.push(format!(
                             "{label}.{comp_key} is a table: the component's settings are `[{label}.{name}] {k} = value`, one level"
+                        ));
+                        continue;
+                    }
+                    if section == "wallet"
+                        && let Some((_, why)) = WALLET_REMOVED.iter().find(|(k, _)| *k == comp_key)
+                    {
+                        problems.push(format!(
+                            "wallet.{comp_key} was removed in aso 0.3.0: {why}. Remove it"
                         ));
                         continue;
                     }

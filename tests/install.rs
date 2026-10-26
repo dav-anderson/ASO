@@ -300,7 +300,7 @@ fn the_wallet_is_funded_by_buy_then_claim_or_by_a_handoff() {
     // buy-psp says the wallet is funded.
     let w = World::new("buy");
     let (done, exec) = w.install(
-        &["--buy-psp", "02dd", "64", "32", "--skip-backup"],
+        &["--buy-psp", "02dd", "--skip-backup"],
         &w.source(),
         &mut Scripted::new(false),
     );
@@ -310,12 +310,18 @@ fn the_wallet_is_funded_by_buy_then_claim_or_by_a_handoff() {
     );
     assert!(
         exec.calls()
-            .contains(&format!("{wallet} buy-psp --mint-key 02dd --sync 64 32")),
+            .contains(&format!("{wallet} buy-psp --mint-key 02dd")),
         "{:#?}",
         exec.calls()
     );
     assert!(done.out.contains("a1b2c3d4payload"), "{}", done.out);
-    assert!(done.out.contains("Pay that payload ONCE"), "{}", done.out);
+    assert!(
+        done.out.contains(
+            "Pay that payload once (in an OP_RETURN), wait for its confirmations, then run `aso install --claim-psp`"
+        ),
+        "{}",
+        done.out
+    );
     assert_eq!(done.code, 0, "install did what it can: {}", done.out);
     assert!(
         done.out
@@ -602,4 +608,42 @@ fn install_writes_a_starter_aso_toml_when_there_is_none() {
         "{}",
         done.out
     );
+}
+
+#[test]
+fn an_unfunded_wallet_is_told_the_funding_steps_in_the_new_words_and_amounts_are_refused() {
+    // Fails if the hint still names AMOUNT, says to pay "ONCE" in capitals, or
+    // `--buy-psp` still takes amounts (the PSP mint decides what a payment is owed).
+    let w = World::new("fund-hint");
+    let (done, _) = w.install(&["--skip-backup"], &w.source(), &mut Scripted::new(false));
+    assert!(
+        done.out.contains(
+            "The wallet holds no PSP. Fund it with one of: `aso install --buy-psp MINT_KEY` (prints a payload to pay once), then `aso install --claim-psp` once it has its confirmations; or `aso install --handoff FILE --did-key-file KEYFILE`"
+        ),
+        "{}",
+        done.out
+    );
+    assert!(!done.out.contains("AMOUNT"), "{}", done.out);
+    let (done, exec) = w.install(
+        &["--buy-psp", "02dd", "64", "--skip-backup"],
+        &w.source(),
+        &mut Scripted::new(false),
+    );
+    assert_eq!(done.code, 2, "{done:?}");
+    assert!(
+        done.err.contains("`aso install` does not take `64`"),
+        "{done:?}"
+    );
+    assert!(
+        !exec.calls().iter().any(|c| c.contains("buy-psp")),
+        "{:#?}",
+        exec.calls()
+    );
+    let (done, _) = w.install(
+        &["--buy-psp", "--skip-backup"],
+        &w.source(),
+        &mut Scripted::new(false),
+    );
+    assert_eq!(done.code, 2, "{done:?}");
+    assert!(done.err.contains("--buy-psp needs MINT_KEY"), "{done:?}");
 }

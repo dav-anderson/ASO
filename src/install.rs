@@ -61,12 +61,10 @@ pub enum Funding {
     /// Check the balance and say what to do.
     #[default]
     None,
-    /// `buy-psp --mint-key KEY --sync AMOUNT...`: prints the payload to pay.
-    Buy {
-        mint_key: String,
-        amounts: Vec<String>,
-    },
-    /// `claim-psp`: pick up what was paid for.
+    /// `buy-psp --mint-key KEY`: prints the payload to pay once.
+    Buy { mint_key: String },
+    /// `claim-psp`: claim what was paid for, once the payment has its
+    /// confirmations.
     Claim,
     /// `handoff import INPUT [--did-key-file FILE]`.
     Handoff {
@@ -405,19 +403,14 @@ pub fn do_wallet(ctx: &Ctx, funding: &Funding) -> Result<Vec<String>, String> {
     }
     let command: Vec<String> = match funding {
         Funding::None => {
-            lines.push("The wallet holds no PSP. Fund it with one of: `aso install --buy-psp MINT_KEY AMOUNT...` (prints a payload to pay once), then `aso install --claim-psp`; or `aso install --handoff FILE --did-key-file KEYFILE`".to_string());
+            lines.push("The wallet holds no PSP. Fund it with one of: `aso install --buy-psp MINT_KEY` (prints a payload to pay once), then `aso install --claim-psp` once it has its confirmations; or `aso install --handoff FILE --did-key-file KEYFILE`".to_string());
             return Ok(lines);
         }
-        Funding::Buy { mint_key, amounts } => {
-            let mut c = vec![
-                "buy-psp".to_string(),
-                "--mint-key".to_string(),
-                mint_key.clone(),
-                "--sync".to_string(),
-            ];
-            c.extend(amounts.iter().cloned());
-            c
-        }
+        Funding::Buy { mint_key } => vec![
+            "buy-psp".to_string(),
+            "--mint-key".to_string(),
+            mint_key.clone(),
+        ],
         Funding::Claim => vec!["claim-psp".to_string()],
         Funding::Handoff {
             input,
@@ -436,7 +429,7 @@ pub fn do_wallet(ctx: &Ctx, funding: &Funding) -> Result<Vec<String>, String> {
         lines.push(format!("  {l}"));
     }
     if matches!(funding, Funding::Buy { .. }) {
-        lines.push("Pay that payload ONCE (in an OP_RETURN), wait for the PSP to settle it, then run `aso install --claim-psp`".to_string());
+        lines.push("Pay that payload once (in an OP_RETURN), wait for its confirmations, then run `aso install --claim-psp`".to_string());
         return Ok(lines);
     }
     let after = wallet::balance(aso, ctx.exec)?;

@@ -39,8 +39,9 @@ COMMANDS
              (b) fsp-mint serve, (c) fund the wallet, (d) optional: FSP at another
              service for backups. Run it again at any time: it checks what exists,
              says what is missing and builds only that.
-               --buy-psp MINT_KEY AMOUNT...   print the payload to pay (once)
-               --claim-psp                    pick up what was paid for
+               --buy-psp MINT_KEY             print the payload to pay once
+               --claim-psp                    claim what was paid for, once the
+                                              payment has its confirmations
                --handoff FILE|STRING [--did-key-file FILE]
                --backup-service DID --backup-psp N     step d
                --skip-backup                  skip step d
@@ -233,7 +234,7 @@ fn parse_funding(args: &mut Vec<String>) -> Result<Funding, String> {
     let handoff = flag_value(args, "--handoff")?;
     let did_key = flag_value(args, "--did-key-file")?;
     let claim = flag(args, "--claim-psp");
-    let buy = args.iter().position(|a| a == "--buy-psp");
+    let buy = flag_value(args, "--buy-psp")?;
     let kinds = usize::from(handoff.is_some()) + usize::from(claim) + usize::from(buy.is_some());
     if kinds > 1 {
         return Err("give one of --buy-psp, --claim-psp, --handoff".into());
@@ -241,27 +242,11 @@ fn parse_funding(args: &mut Vec<String>) -> Result<Funding, String> {
     if did_key.is_some() && handoff.is_none() {
         return Err("--did-key-file goes with --handoff".into());
     }
-    if let Some(at) = buy {
-        let mut rest: Vec<String> = args.drain(at..).collect();
-        rest.remove(0);
-        if rest.len() < 2 {
-            return Err("--buy-psp needs MINT_KEY and at least one AMOUNT".into());
+    if let Some(mint_key) = buy {
+        if mint_key.starts_with("--") {
+            return Err("--buy-psp needs MINT_KEY".into());
         }
-        // Flags that follow the amounts belong to install.
-        let split = rest
-            .iter()
-            .position(|a| a.starts_with("--"))
-            .unwrap_or(rest.len());
-        let tail = rest.split_off(split);
-        args.extend(tail);
-        let mint_key = rest.remove(0);
-        if rest.is_empty() {
-            return Err("--buy-psp needs at least one AMOUNT after MINT_KEY".into());
-        }
-        return Ok(Funding::Buy {
-            mint_key,
-            amounts: rest,
-        });
+        return Ok(Funding::Buy { mint_key });
     }
     if claim {
         return Ok(Funding::Claim);

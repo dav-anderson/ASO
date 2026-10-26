@@ -369,8 +369,8 @@ impl World {
         FakeSource::new()
             .with(Program::Fsp, &["v0.6.0", "v0.8.0"])
             .build(Program::Fsp, "0.8.0", "fsp-mint build 0.8.0")
-            .with(Program::Wallet, &["v0.6.0", "v0.7.0"])
-            .build(Program::Wallet, "0.7.0", "ecash-wallet build 0.7.0")
+            .with(Program::Wallet, &["v0.7.0", "v0.8.0"])
+            .build(Program::Wallet, "0.8.0", "ecash-wallet build 0.8.0")
     }
 
     /// The programs: `id` knows the account; `fsp-mint service-key` makes the key
@@ -403,7 +403,7 @@ impl World {
                 "fsp-mint" if has("audit") => ran(0, "issued 10\nspent 4\n", ""),
                 "ecash-wallet" if args == ["--version"] => ran(
                     0,
-                    "ecash-wallet 0.7.0\nsp-wire 0.5.1\nmint-core 0.2.0\nair 1.0.1\n",
+                    "ecash-wallet 0.8.0\nsp-wire 0.6.0\nmint-core 0.3.0\nair 1.0.1\n",
                     "",
                 ),
                 "ecash-wallet" if args.last().map(String::as_str) == Some("balance") => ran(
@@ -478,15 +478,15 @@ impl World {
 }
 
 /// A source with fsp-mint 0.8.0 and 0.9.0 (and a release candidate that must
-/// never be chosen) and the wallet at 0.7.0.
+/// never be chosen) and the wallet at 0.8.0.
 pub fn newer_source() -> FakeSource {
     FakeSource::new()
         .with(Program::Fsp, &["v0.8.0", "v0.9.0", "v0.10.0-rc1"])
         .build(Program::Fsp, "0.8.0", "fsp-mint build 0.8.0")
         .build(Program::Fsp, "0.9.0", "fsp-mint build 0.9.0")
         .build(Program::Fsp, "0.10.0-rc1", "fsp-mint build 0.10.0-rc1")
-        .with(Program::Wallet, &["v0.7.0"])
-        .build(Program::Wallet, "0.7.0", "ecash-wallet build 0.7.0")
+        .with(Program::Wallet, &["v0.8.0"])
+        .build(Program::Wallet, "0.8.0", "ecash-wallet build 0.8.0")
 }
 
 /// [`load`] for another operating system (`linux` or `macos`).

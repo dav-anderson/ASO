@@ -155,7 +155,7 @@ fn an_answered_yes_upgrades_fsp_mint_with_one_restart_and_reports_the_downtime()
     );
     assert!(
         done.out
-            .contains("ecash-wallet: already 0.7.0: nothing to do"),
+            .contains("ecash-wallet: already 0.8.0: nothing to do"),
         "{}",
         done.out
     );
@@ -253,8 +253,8 @@ fn a_release_candidate_is_never_installed_even_when_it_is_the_only_newer_tag() {
             "0.10.0-rc1",
             "fsp-mint build rc",
         )
-        .with(aso::program::Program::Wallet, &["v0.7.0"])
-        .build(aso::program::Program::Wallet, "0.7.0", "x");
+        .with(aso::program::Program::Wallet, &["v0.8.0"])
+        .build(aso::program::Program::Wallet, "0.8.0", "x");
     let (done, exec) = w.run(&["upgrade", "--yes"], &src, &mut Scripted::new(false));
     assert!(
         done.out.contains("fsp-mint: already 0.8.0: nothing to do"),

@@ -1,7 +1,7 @@
 //! The automatic ESP redeem: export-esp, receive, redeem, collect, resume, and
 //! that a second run hands out nothing twice. The programs are a model of the
 //! contract between fsp-mint (item 13: `export-esp` through the running serve
-//! gives each kept note once) and ecash-wallet 0.7.0.
+//! gives each kept note once) and ecash-wallet 0.8.0.
 
 mod common;
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0] - 2026-10-26
+
+The PSP claim rework (pass 2): aso follows ecash-wallet 0.8.0 and psp-mint 0.8.x (the wallet claims what a payment is owed; there are no amounts). Pin: `air-minterface` v0.3.0.
+
+- **`aso install --buy-psp MINT_KEY`** takes no amounts (it was `MINT_KEY AMOUNT...`). It runs `ecash-wallet buy-psp --mint-key KEY` (no `--sync`: the wallet has no note limits to sync), which prints a payload to pay once. `--claim-psp` runs `claim-psp` once the payment has its confirmations. The printed next steps say so: "`aso install --buy-psp MINT_KEY` (prints a payload to pay once), then `aso install --claim-psp` once it has its confirmations" and "Pay that payload once (in an OP_RETURN), wait for its confirmations, then run `aso install --claim-psp`". A PSP purchase of at least $5 (50 PSP) is recommended; nothing enforces it.
+- **Removed: `wallet.psp.min_purchase`** (it checked the amounts that are gone). A `[wallet.psp] min_purchase` in aso.toml is refused with a message that says it was removed in aso 0.3.0 (it used to be passed through to ecash-wallet, which now refuses it too).
+- **0 keeps everything** (air-minterface 0.3.0): `service.log_keep` 0 to 52, `service.log_max_size_mb` 0 to 10240 (0 never moves a log aside), `service.config_backups` 0 to 100 and `release.keep` 0 to 20. Upper bounds are unchanged. The oldest downloaded releases are removed first, and never the installed release or the one before it. **`release.keep` defaults to 2** (it was 3). `ASO_SERVICE_LOG_KEEP=0` and the other variables take 0 too.
+- **Needs ecash-wallet 0.8.0 or later** (it was 0.7.0): aso runs the claim flow (`buy-psp --mint-key`, `claim-psp`). A `wallet.version` older than 0.8.0 is refused with "aso needs ecash-wallet 0.8.0 or later (it uses `claim-psp`)".
+- **New: `wallet.psp.unpaid_key_days`** (`[wallet.psp] unpaid_key_days`, default 90, 0 to 3650, reloads live), passed through to ecash-wallet's `psp.unpaid_key_days`: a purchase's claim key with no record from the PSP mint is dropped, with a warning, that many days after `buy-psp`; 0 keeps it for ever. A payment made to the payload after that is lost.
+- Docs: README (the settings tables, the 0 rule, the funding steps, the caps table).
+
 ## [0.2.1] - 2026-10-24
 
 The shared crate is renamed air-minterface (it was air-interface): aso now
