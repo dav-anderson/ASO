@@ -1,7 +1,7 @@
 //! The automatic ESP redeem: export-esp, receive, redeem, collect, resume, and
 //! that a second run hands out nothing twice. The programs are a model of the
 //! contract between fsp-mint (item 13: `export-esp` through the running serve
-//! gives each kept note once) and ecash-wallet 0.8.0.
+//! gives each kept note once) and ecash-wallet 0.9.0.
 
 mod common;
 
@@ -40,7 +40,7 @@ fn chain_exec(w: &World, chain: &Arc<Chain>) -> Fake {
                 .cloned()
         };
         if bin.ends_with("fsp-mint") && has("export-esp") {
-            // Without --serve-only, fsp-mint 0.8.0 does the export itself when
+            // Without --serve-only, fsp-mint does the export itself when
             // no serve answers: as root, in the service account's data folder.
             if !has("--serve-only") {
                 return ran(1, "", "export-esp without --serve-only");
@@ -317,18 +317,18 @@ fn aso_never_does_the_export_itself_when_fsp_mint_is_not_serving() {
 }
 
 #[test]
-fn an_fsp_mint_older_than_0_8_0_or_one_aso_has_no_record_of_is_not_asked_to_export() {
+fn an_fsp_mint_older_than_0_10_0_or_one_aso_has_no_record_of_is_not_asked_to_export() {
     // Fails if aso asks an fsp-mint that has no `export-esp --serve-only` (it
     // would do the export itself, as root, when serve is not answering).
     let (w, chain, src) = setup("oldfsp");
     chain.kept.lock().unwrap().push("a".to_string());
     let binary = w.dir.join("bin/fsp-mint");
-    aso::state::record_installed(&w.aso(), aso::program::Program::Fsp, "0.7.0", &binary).unwrap();
+    aso::state::record_installed(&w.aso(), aso::program::Program::Fsp, "0.9.0", &binary).unwrap();
     let (done, exec) = run(&w, &chain, &src);
     assert_eq!(done.code, 1, "{}", done.out);
     assert!(
         done.out.contains(
-            "export-esp skipped: the installed fsp-mint is 0.7.0, and aso needs 0.8.0 or later (`export-esp --serve-only`)"
+            "export-esp skipped: the installed fsp-mint is 0.9.0, and aso needs 0.10.0 or later (wire version 5 and the keys it publishes)"
         ),
         "{}",
         done.out

@@ -107,9 +107,11 @@ Refused when the file loads: an `air.fee_read` or `air.fee_write` other than 0
 pin on a release candidate or pre-release (`0.9.0-rc1`), which is never
 installed; a removed setting (`wallet.psp.min_purchase`: `buy-psp` takes no
 amounts, so there is no purchase size to check; the message says it was removed
-in aso 0.3.0); an `fsp.version` older than 0.8.0 or a `wallet.version` older than
-0.8.0 (aso uses fsp-mint's `export-esp --serve-only` and ecash-wallet's
-claim flow, `claim-psp`); a path that is not absolute; an fsp-mint bind that is not loopback.
+in aso 0.3.0); an `fsp.version` older than 0.10.0 or a `wallet.version` older than
+0.9.0 (those are the releases that speak wire version 5, with the one shared
+keyset ID, and publish or check the mints' keys on AIR; older ones cannot talk
+to the 0.9.0/0.11.0 mints. aso still uses fsp-mint's `export-esp --serve-only`
+and ecash-wallet's claim flow, `claim-psp`); a path that is not absolute; an fsp-mint bind that is not loopback.
 
 `aso reload` applies what can change while the service runs. A setting marked
 **needs a restart** is only named by `aso reload` as waiting; `aso restart`
@@ -148,9 +150,9 @@ applies it, with a brief downtime.
 | `air.fee_read` | `0` | needs a restart | AIR server fee per read. Only 0 is accepted: stock air_server 1.0.1 has no fee hook (upstream item 1). |
 | `air.fee_write` | `0` | needs a restart | AIR server fee per write. Only 0 is accepted: stock air_server 1.0.1 has no fee hook (upstream item 1). |
 | `fsp.bin` | `fsp-mint` | reloads live | The fsp-mint binary used until `aso install` has put a release in bin_dir (a path, or a name on PATH). |
-| `fsp.version` | (not set) | reloads live | Pins fsp-mint to this release (x.y.z). Empty: the newest tagged release. Never a release candidate. |
+| `fsp.version` | (not set) | reloads live | Pins fsp-mint to this release (x.y.z), 0.10.0 or later. Empty: the newest tagged release. Never a release candidate. |
 | `wallet.bin` | `ecash-wallet` | reloads live | The ecash-wallet binary, as fsp.bin. |
-| `wallet.version` | (not set) | reloads live | Pins ecash-wallet to this release (x.y.z), 0.8.0 or later. Empty: the newest tagged release. |
+| `wallet.version` | (not set) | reloads live | Pins ecash-wallet to this release (x.y.z), 0.9.0 or later. Empty: the newest tagged release. |
 | `redeem.payout` | (not set) | reloads live | Where the ESP the service earns is paid out, for example btc:ADDRESS. Empty: no automatic redeem. |
 | `redeem.interval_hours` | `24` | reloads live | How often the automatic redeem runs, in hours (the timer is written again by `aso reload`). |
 | `release.url` | `https://api.github.com` | reloads live | The GitHub API address releases are listed from. |
@@ -200,6 +202,8 @@ applies it, with a brief downtime.
 | `wallet.air.max_skew_secs` | `300` | reloads live | ecash-wallet's `air.max_skew_secs` (it reads its file on every run) |
 | `wallet.air.timeout_secs` | `10` | reloads live | ecash-wallet's `air.timeout_secs` (it reads its file on every run) |
 | `wallet.psp.unpaid_key_days` | `90` | reloads live | ecash-wallet's `psp.unpaid_key_days`: days a purchase's claim key is kept while the PSP mint has written no record for it, then dropped with a warning. A payment made to the payload after that is lost. 0 to 3650; 0 keeps it for ever |
+| `wallet.fsp.blacklist_on_key_mismatch` | `false` | reloads live | ecash-wallet's `fsp.blacklist_on_key_mismatch` (ecash-wallet 0.9.0): what the wallet does when one of the service's FSP mints fails the key check, that is, it signed with a key, or in a keyset, that it did not publish on AIR (a sign it may be fingerprinting the wallet's notes). `false`: the wallet keeps its notes, prints a loud warning naming the mint, what failed and where, and stores nothing from that reply. `true`: it also blacklists that FSP mint, drops its notes (removed, not backed up) and sends it no more requests until an operator runs `ecash-wallet blacklist remove --service DID`. A boolean (`true` or `false`) |
+| `wallet.fsp.blacklist_max` | `1000` | reloads live | ecash-wallet's `fsp.blacklist_max`: the most FSP mints the blacklist holds. 0 to 1000000; 0 for no cap. At the cap a mint that fails the check is not blacklisted and its notes are kept; the warning says the blacklist is full, and no entry is ever removed to make room |
 
 ## Upgrading
 
@@ -244,7 +248,7 @@ run` every `redeem.interval_hours` (24; on Linux also ten minutes after boot). O
    fails, touching nothing in fsp-mint's data folder, when none answers: the job
    runs as root, and must never make a file there that fsp-mint cannot write.
    aso checks fsp-mint answers its health check first, and skips the export if
-   the installed fsp-mint is older than 0.8.0 (it has no `--serve-only`) or aso
+   the installed fsp-mint is older than 0.10.0 (aso's minimum; 0.7.x and older have no `--serve-only`) or aso
    has no record of its version;
 2. `ecash-wallet receive FILE` for each file there, and deletes the file as soon
    as the wallet has it;

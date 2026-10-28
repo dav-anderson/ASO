@@ -10,8 +10,8 @@
 //!    only asks the running serve and fails if none answers: it never takes the
 //!    data folder's lock or opens its files, so the redeem job (root) cannot
 //!    leave a file in fsp-mint's data folder that the service account cannot
-//!    write. aso asks only an fsp-mint it recorded as 0.8.0 or later (older ones
-//!    have no `--serve-only` and would do the export themselves).
+//!    write. aso asks only an fsp-mint it recorded as 0.10.0 or later (older ones
+//!    are below aso's minimum, and 0.7.x ones have no `--serve-only`).
 //! 2. `ecash-wallet receive FILE` for every file in the hand-over folder (also
 //!    one left by an earlier run whose `receive` failed), and the file is
 //!    deleted as soon as the wallet has received it. A hand-over file holds the
@@ -89,18 +89,18 @@ fn make_private_dir(dir: &Path) -> Result<(), String> {
 }
 
 /// Why the installed fsp-mint must not be asked to export, if it must not: it
-/// is older than 0.8.0 (no `export-esp --serve-only`), or aso has no record of
-/// this exact binary and so cannot tell.
+/// is older than 0.10.0, the minimum (0.7.x and older have no `export-esp
+/// --serve-only`), or aso has no record of this exact binary and so cannot tell.
 fn fsp_too_old(aso: &Aso) -> Option<String> {
     let (min, why) = Program::Fsp.min_version()?;
     let binary = Program::Fsp.installed_path(aso);
     match state::recorded_version(aso, Program::Fsp, &binary) {
         Some(v) if !Tags::Strict.is_newer(min, &v) => None,
         Some(v) => Some(format!(
-            "export-esp skipped: the installed fsp-mint is {v}, and aso needs {min} or later (`{why}`), so that the export is always done by the running fsp-mint. Run `aso upgrade fsp-mint`"
+            "export-esp skipped: the installed fsp-mint is {v}, and aso needs {min} or later ({why}), so that the export is always done by the running fsp-mint. Run `aso upgrade fsp-mint`"
         )),
         None => Some(format!(
-            "export-esp skipped: aso has no record of {} (fsp-mint prints no version), so it cannot tell that it has `{why}` ({min} or later). Run `aso install`",
+            "export-esp skipped: aso has no record of {} (fsp-mint prints no version), so it cannot tell that it has {why} ({min} or later). Run `aso install`",
             binary.display()
         )),
     }
@@ -143,7 +143,8 @@ pub fn run(aso: &Aso, exec: &dyn Exec, log: &mut dyn FnMut(&str)) -> Run {
     // data folder: `--serve-only` asks it and fails if nothing answers, so
     // `export-esp` never does the export itself as whoever runs aso (root), which
     // would leave files the service account cannot write. An fsp-mint older than
-    // 0.8.0 has no `--serve-only`, so it is not asked at all.
+    // 0.10.0 is below aso's minimum (and 0.7.x has no `--serve-only`), so it is
+    // not asked at all.
     let up = ctl::health(aso, Program::Fsp);
     let refusal = if !up.up {
         Some(format!(

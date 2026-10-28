@@ -466,7 +466,7 @@ fn versions_says_where_each_version_came_from_or_why_it_is_unknown() {
             .to_string()
     };
     assert!(
-        line("fsp-mint").contains("0.8.0")
+        line("fsp-mint").contains("0.10.0")
             && line("fsp-mint")
                 .contains("recorded by aso for this exact binary (fsp-mint prints no version)")
     );
@@ -475,8 +475,8 @@ fn versions_says_where_each_version_came_from_or_why_it_is_unknown() {
             && line("air_server")
                 .contains("recorded by aso for this exact binary (air_server prints no version)")
     );
-    assert!(line("ecash-wallet").contains("0.8.0"));
-    assert!(line("ecash-wallet/sp-wire").contains("0.6.0"));
+    assert!(line("ecash-wallet").contains("0.9.0"));
+    assert!(line("ecash-wallet/sp-wire").contains("0.7.0"));
     assert!(line("air-minterface").contains(" 0.3.0 "), "{}", done.out);
     assert!(
         line("fsp-mint/sp-wire").contains("unknown")

@@ -299,7 +299,7 @@ pub const SETTINGS: &[Setting] = &[
         Text,
         "",
         Live,
-        "Pins fsp-mint to this release (x.y.z), 0.8.0 or later. Empty: the newest tagged release. Never a release candidate.",
+        "Pins fsp-mint to this release (x.y.z), 0.10.0 or later. Empty: the newest tagged release. Never a release candidate.",
     ),
     s(
         "wallet.bin",
@@ -313,7 +313,7 @@ pub const SETTINGS: &[Setting] = &[
         Text,
         "",
         Live,
-        "Pins ecash-wallet to this release (x.y.z), 0.8.0 or later. Empty: the newest tagged release.",
+        "Pins ecash-wallet to this release (x.y.z), 0.9.0 or later. Empty: the newest tagged release.",
     ),
     s(
         "redeem.payout",
@@ -345,7 +345,7 @@ pub const SETTINGS: &[Setting] = &[
     ),
 ];
 
-/// fsp-mint's own settings, as in `fsp-mint config` (fsp-mint 0.8.0
+/// fsp-mint's own settings, as in `fsp-mint config` (fsp-mint 0.10.0
 /// `config::SPECS`): `(key, default, reloads live)`. An empty default is "not
 /// set". Written into `aso.toml` as `[fsp.<section>]`.
 pub const FSP: &[(&str, &str, bool)] = &[
@@ -374,7 +374,7 @@ pub const FSP: &[(&str, &str, bool)] = &[
     ("storage.mint_state", "", false),
 ];
 
-/// ecash-wallet's settings (ecash-wallet 0.8.0 `config::SPECS`). The wallet reads
+/// ecash-wallet's settings (ecash-wallet 0.9.0 `config::SPECS`). The wallet reads
 /// its file on every run, so every one is live.
 pub const WALLET: &[(&str, &str, bool)] = &[
     ("storage.wallet", "", true),
@@ -389,6 +389,8 @@ pub const WALLET: &[(&str, &str, bool)] = &[
     ("air.max_skew_secs", "300", true),
     ("air.timeout_secs", "10", true),
     ("psp.unpaid_key_days", "90", true),
+    ("fsp.blacklist_on_key_mismatch", "false", true),
+    ("fsp.blacklist_max", "1000", true),
 ];
 
 /// The wallet settings that were removed, with why: `[wallet.<section>]` keys
@@ -962,7 +964,7 @@ impl Aso {
                     && air_minterface::version::Tags::Strict.is_newer(min, &v)
                 {
                     p.push(format!(
-                        "{key} is `{v}`: aso needs {} {min} or later (it uses `{why}`). Pin {min} or later, or remove the line",
+                        "{key} is `{v}`: aso needs {} {min} or later (it needs {why}). Pin {min} or later, or remove the line",
                         program.name()
                     ));
                 }

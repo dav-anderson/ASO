@@ -32,9 +32,9 @@ fn check_says_which_programs_have_a_newer_release_and_changes_nothing() {
             .to_string()
     };
     assert!(
-        line("fsp-mint").contains("installed 0.8.0")
-            && line("fsp-mint").contains("newest 0.9.0")
-            && line("fsp-mint").ends_with("upgrade available (0.9.0)"),
+        line("fsp-mint").contains("installed 0.10.0")
+            && line("fsp-mint").contains("newest 0.11.0")
+            && line("fsp-mint").ends_with("upgrade available (0.11.0)"),
         "{}",
         done.out
     );
@@ -57,13 +57,13 @@ fn check_warns_about_a_pin_that_holds_a_program_back() {
     let exec = w.exec();
     let done = cli(
         &w.dir,
-        &pinned_text(&w, "0.8.0"),
+        &pinned_text(&w, "0.10.0"),
         &["upgrade", "check"],
         &exec,
         &src,
         &mut Scripted::new(false),
     );
-    assert!(done.out.contains("WARNING: these programs are pinned and are not at the newest release:\n  fsp-mint: pinned at 0.8.0 (newest 0.9.0)"), "{}", done.out);
+    assert!(done.out.contains("WARNING: these programs are pinned and are not at the newest release:\n  fsp-mint: pinned at 0.10.0 (newest 0.11.0)"), "{}", done.out);
     assert!(done.out.contains("1 pinned"), "{}", done.out);
 }
 
@@ -98,7 +98,7 @@ fn upgrade_warns_about_the_downtime_and_changes_nothing_without_a_yes() {
         done.out
     );
     assert_eq!(stops(&exec.calls()), Vec::<String>::new());
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
     assert!(
         src.fetched.lock().unwrap().is_empty(),
         "{:?}",
@@ -121,21 +121,21 @@ fn an_answered_yes_upgrades_fsp_mint_with_one_restart_and_reports_the_downtime()
         stops(&exec.calls()),
         vec!["systemctl restart aso-fsp.service"]
     );
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.9.0");
-    assert_eq!(w.read("bin/fsp-mint.previous"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.11.0");
+    assert_eq!(w.read("bin/fsp-mint.previous"), "fsp-mint build 0.10.0");
     assert!(
         w.read("installed/fsp-mint.json")
-            .contains("\"version\": \"0.9.0\""),
+            .contains("\"version\": \"0.11.0\""),
         "{}",
         w.read("installed/fsp-mint.json")
     );
     assert_eq!(
         *src.fetched.lock().unwrap(),
-        vec!["fsp-mint 0.9.0".to_string()]
+        vec!["fsp-mint 0.11.0".to_string()]
     );
     assert!(
         done.out
-            .contains("fsp-mint: 0.8.0 -> 0.9.0: BRIEF DOWNTIME"),
+            .contains("fsp-mint: 0.10.0 -> 0.11.0: BRIEF DOWNTIME"),
         "{}",
         done.out
     );
@@ -146,7 +146,7 @@ fn an_answered_yes_upgrades_fsp_mint_with_one_restart_and_reports_the_downtime()
         "{}",
         done.out
     );
-    assert!(done.out.contains("fsp-mint: now 0.9.0"), "{}", done.out);
+    assert!(done.out.contains("fsp-mint: now 0.11.0"), "{}", done.out);
     assert!(
         done.out
             .contains("air_server: already 1.0.1: nothing to do"),
@@ -155,7 +155,7 @@ fn an_answered_yes_upgrades_fsp_mint_with_one_restart_and_reports_the_downtime()
     );
     assert!(
         done.out
-            .contains("ecash-wallet: already 0.8.0: nothing to do"),
+            .contains("ecash-wallet: already 0.9.0: nothing to do"),
         "{}",
         done.out
     );
@@ -191,7 +191,7 @@ fn a_dry_run_downloads_nothing_and_stops_nothing() {
     );
     assert!(src.fetched.lock().unwrap().is_empty());
     assert_eq!(stops(&exec.calls()), Vec::<String>::new());
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
 }
 
 #[test]
@@ -199,12 +199,12 @@ fn a_download_that_fails_its_checksum_is_refused_before_anything_is_stopped() {
     // Fails if a corrupt download is installed, or a service is stopped for it.
     let (w, _) = World::installed("badsum");
     let mut src = newer_source();
-    src.builds.iter_mut().find(|b| b.1 == "0.9.0").unwrap().3 = Some("0".repeat(64));
+    src.builds.iter_mut().find(|b| b.1 == "0.11.0").unwrap().3 = Some("0".repeat(64));
     let (done, exec) = w.run(&["upgrade", "--yes"], &src, &mut Scripted::new(false));
     assert_eq!(done.code, 1, "{}", done.out);
     assert!(done.out.contains("failed its checksum"), "{}", done.out);
     assert_eq!(stops(&exec.calls()), Vec::<String>::new());
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
 }
 
 #[test]
@@ -235,10 +235,10 @@ fn a_restart_that_fails_puts_the_old_binary_back() {
         "{}",
         done.out
     );
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
     assert!(
         w.read("installed/fsp-mint.json")
-            .contains("\"version\": \"0.8.0\"")
+            .contains("\"version\": \"0.10.0\"")
     );
 }
 
@@ -247,17 +247,17 @@ fn a_release_candidate_is_never_installed_even_when_it_is_the_only_newer_tag() {
     // Fails if an rc tag becomes the target.
     let (w, _) = World::installed("rc");
     let src = FakeSource::new()
-        .with(aso::program::Program::Fsp, &["v0.8.0", "v0.10.0-rc1"])
+        .with(aso::program::Program::Fsp, &["v0.10.0", "v0.12.0-rc1"])
         .build(
             aso::program::Program::Fsp,
-            "0.10.0-rc1",
+            "0.12.0-rc1",
             "fsp-mint build rc",
         )
-        .with(aso::program::Program::Wallet, &["v0.8.0"])
-        .build(aso::program::Program::Wallet, "0.8.0", "x");
+        .with(aso::program::Program::Wallet, &["v0.9.0"])
+        .build(aso::program::Program::Wallet, "0.9.0", "x");
     let (done, exec) = w.run(&["upgrade", "--yes"], &src, &mut Scripted::new(false));
     assert!(
-        done.out.contains("fsp-mint: already 0.8.0: nothing to do"),
+        done.out.contains("fsp-mint: already 0.10.0: nothing to do"),
         "{}",
         done.out
     );
@@ -266,7 +266,7 @@ fn a_release_candidate_is_never_installed_even_when_it_is_the_only_newer_tag() {
     let exec = w.exec();
     let done = cli(
         &w.dir,
-        &pinned_text(&w, "0.10.0-rc1"),
+        &pinned_text(&w, "0.12.0-rc1"),
         &["upgrade", "--yes"],
         &exec,
         &src,
@@ -275,7 +275,7 @@ fn a_release_candidate_is_never_installed_even_when_it_is_the_only_newer_tag() {
     assert_eq!(done.code, 2, "{done:?}");
     assert!(
         done.err.contains(
-            "fsp.version is `0.10.0-rc1`: a release candidate or pre-release is never installed"
+            "fsp.version is `0.12.0-rc1`: a release candidate or pre-release is never installed"
         ),
         "{}",
         done.err
@@ -290,7 +290,7 @@ fn a_pin_is_warned_about_and_kept_when_there_is_no_terminal() {
     let exec = w.exec();
     let done = cli(
         &w.dir,
-        &pinned_text(&w, "0.8.0"),
+        &pinned_text(&w, "0.10.0"),
         &["upgrade", "--yes"],
         &exec,
         &src,
@@ -299,21 +299,21 @@ fn a_pin_is_warned_about_and_kept_when_there_is_no_terminal() {
     assert_eq!(done.code, 0, "{}", done.out);
     assert!(
         done.out
-            .contains("  fsp-mint: pinned at 0.8.0 (newest 0.9.0)"),
+            .contains("  fsp-mint: pinned at 0.10.0 (newest 0.11.0)"),
         "{}",
         done.out
     );
     assert!(
         done.out
-            .contains("WARNING: fsp-mint stays pinned at 0.8.0: there is no terminal to ask"),
+            .contains("WARNING: fsp-mint stays pinned at 0.10.0: there is no terminal to ask"),
         "{}",
         done.out
     );
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
     assert!(
         fs::read_to_string(w.dir.join("aso.toml"))
             .unwrap()
-            .contains("version = \"0.8.0\"")
+            .contains("version = \"0.10.0\"")
     );
 }
 
@@ -323,19 +323,19 @@ fn a_pin_is_asked_about_and_a_yes_resets_it_with_a_backup_of_aso_toml() {
     // old aso.toml is not kept.
     let (w, _) = World::installed("pinreset");
     let src = newer_source();
-    let text = pinned_text(&w, "0.8.0");
+    let text = pinned_text(&w, "0.10.0");
     let mut ask = Scripted::new(true).saying(&[true, true]);
     let exec = w.exec();
     let done = cli(&w.dir, &text, &["upgrade"], &exec, &src, &mut ask);
     assert_eq!(done.code, 0, "{}", done.out);
     assert_eq!(
         ask.asked[0],
-        "Reset the pin of fsp-mint (pinned at 0.8.0, newest 0.9.0) so the newest is installed?"
+        "Reset the pin of fsp-mint (pinned at 0.10.0, newest 0.11.0) so the newest is installed?"
     );
     assert_eq!(ask.asked[1], "Upgrade now?");
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.9.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.11.0");
     assert!(
-        !w.read("aso.toml").contains("version = \"0.8.0\""),
+        !w.read("aso.toml").contains("version = \"0.10.0\""),
         "{}",
         w.read("aso.toml")
     );
@@ -345,14 +345,14 @@ fn a_pin_is_asked_about_and_a_yes_resets_it_with_a_backup_of_aso_toml() {
     let mut ask = Scripted::new(true).saying(&[false, true]);
     let done = cli(
         &w.dir,
-        &pinned_text(&w, "0.8.0"),
+        &pinned_text(&w, "0.10.0"),
         &["upgrade"],
         &w.exec(),
         &src,
         &mut ask,
     );
     assert_eq!(done.code, 0, "{}", done.out);
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
     assert!(!w.dir.join(format!("aso.toml.{NOW}.bak")).exists());
 }
 
@@ -364,7 +364,7 @@ fn keep_pins_and_reset_pins_answer_for_every_pin() {
     let mut ask = Scripted::new(true).saying(&[true]);
     let done = cli(
         &w.dir,
-        &pinned_text(&w, "0.8.0"),
+        &pinned_text(&w, "0.10.0"),
         &["upgrade", "--reset-pins"],
         &w.exec(),
         &src,
@@ -372,19 +372,19 @@ fn keep_pins_and_reset_pins_answer_for_every_pin() {
     );
     assert_eq!(done.code, 0, "{}", done.out);
     assert_eq!(ask.asked, vec!["Upgrade now?"]);
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.9.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.11.0");
     let (w, _) = World::installed("pinflags2");
     let mut ask = Scripted::new(true).saying(&[true]);
     cli(
         &w.dir,
-        &pinned_text(&w, "0.8.0"),
+        &pinned_text(&w, "0.10.0"),
         &["upgrade", "--keep-pins"],
         &w.exec(),
         &src,
         &mut ask,
     );
     assert_eq!(ask.asked, vec!["Upgrade now?"]);
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
 }
 
 #[test]
@@ -427,7 +427,7 @@ fn an_upgrade_is_scheduled_shown_refused_twice_and_cancelled() {
         w.read("units/aso-upgrade.service")
             .contains("upgrade run-scheduled")
     );
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
 
     let (done, _) = w.run(&["upgrade", "status"], &src, &mut Scripted::new(false));
     assert!(done.out.contains("Upgrade scheduled for "), "{}", done.out);
@@ -554,7 +554,7 @@ fn the_scheduled_run_upgrades_on_time_skips_when_late_and_waits_when_early() {
     );
     assert!(done.out.contains("not yet: left scheduled"), "{}", done.out);
     assert!(w.dir.join("upgrade/pending.json").exists());
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
 
     let w = schedule("run-on-time");
     let exec = w.exec();
@@ -568,7 +568,7 @@ fn the_scheduled_run_upgrades_on_time_skips_when_late_and_waits_when_early() {
         &mut Scripted::new(false),
     );
     assert_eq!(done.code, 0, "{}", done.out);
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.9.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.11.0");
     assert_eq!(
         stops(&exec.calls()),
         vec!["systemctl restart aso-fsp.service"]
@@ -598,7 +598,7 @@ fn the_scheduled_run_upgrades_on_time_skips_when_late_and_waits_when_early() {
     );
     assert!(done.out.contains(&skipped), "{}", done.out);
     assert!(w.read("logs/aso-upgrade.log").contains(&skipped));
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.8.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.10.0");
     assert_eq!(stops(&exec.calls()), Vec::<String>::new());
     assert!(!w.dir.join("upgrade/pending.json").exists());
 }
@@ -608,7 +608,7 @@ fn a_scheduled_upgrade_with_reset_pins_resets_them_when_it_runs_not_when_it_is_s
     // Fails if scheduling edits aso.toml, or the run keeps the pin.
     let (w, _) = World::installed("schedpin");
     let src = newer_source();
-    let text = pinned_text(&w, "0.8.0");
+    let text = pinned_text(&w, "0.10.0");
     let done = cli(
         &w.dir,
         &text,
@@ -629,7 +629,7 @@ fn a_scheduled_upgrade_with_reset_pins_resets_them_when_it_runs_not_when_it_is_s
         &mut Scripted::new(false),
     );
     assert_eq!(done.code, 0, "{}", done.out);
-    assert!(!w.read("aso.toml").contains("version = \"0.8.0\""));
+    assert!(!w.read("aso.toml").contains("version = \"0.10.0\""));
     assert_eq!(w.read(&format!("aso.toml.{}.bak", NOW + 61)), text);
-    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.9.0");
+    assert_eq!(w.read("bin/fsp-mint"), "fsp-mint build 0.11.0");
 }

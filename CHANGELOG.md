@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0] - 2026-10-27
+
+P2-04, the key check (pass 2): aso follows the wire-version-5 releases, whose mints publish their keys on AIR and whose wallet checks them. Pin: `air-minterface` v0.3.0 (unchanged). aso links none of the family's crates, so no other pin moves.
+
+- **Needs fsp-mint 0.10.0 or later** (it was 0.8.0) **and ecash-wallet 0.9.0 or later** (it was 0.8.0). Those are the first releases on wire version 5, with the one shared sp-wire keyset ID; an older fsp-mint or wallet cannot talk to the 0.9.0/0.11.0 mints. A `fsp.version` older than 0.10.0 or a `wallet.version` older than 0.9.0 is refused when the file loads ("aso needs fsp-mint 0.10.0 or later (it needs wire version 5 and the keys it publishes)" and "aso needs ecash-wallet 0.9.0 or later (it needs wire version 5 and the key check)"). The automatic redeem skips `export-esp` for an fsp-mint recorded as older than 0.10.0, with the same minimum in its message.
+- **New: `wallet.fsp.blacklist_on_key_mismatch`** (`[wallet.fsp] blacklist_on_key_mismatch`, default `false`, reloads live) and **`wallet.fsp.blacklist_max`** (default 1000, reloads live), passed through to ecash-wallet's `fsp.blacklist_on_key_mismatch` and `fsp.blacklist_max`. Off, a wallet whose FSP mint fails the key check keeps its notes and warns loudly. On, it also blacklists that mint and drops its notes. aso's own default stays `false`.
+- Docs: README (the minimums, the two new wallet rows, the redeem skip), the `program.rs`, `config.rs` and `redeem.rs` comments.
+- Removed public items: none.
+- Tests: 81 before, 83 after (3 added, 1 removed: `an_fsp_mint_older_than_0_8_0_or_one_aso_has_no_record_of_is_not_asked_to_export` is replaced by `..._0_10_0_...`, the third added test being that one). Fixtures move to fsp-mint 0.10.0/0.11.0/0.12.0-rc1 and ecash-wallet 0.9.0 (the old fixtures are below the new minimum); the fake wallet reports sp-wire 0.7.0; new tests for the two settings and the raised minimums.
+
 ## [0.3.0] - 2026-10-26
 
 The PSP claim rework (pass 2): aso follows ecash-wallet 0.8.0 and psp-mint 0.8.x (the wallet claims what a payment is owed; there are no amounts). Pin: `air-minterface` v0.3.0.

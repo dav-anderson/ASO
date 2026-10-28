@@ -544,7 +544,7 @@ fn status_shows_each_step_each_process_and_readiness() {
     assert!(
         done.out
             .lines()
-            .any(|l| l.starts_with("fsp-mint") && l.ends_with("version 0.8.0")),
+            .any(|l| l.starts_with("fsp-mint") && l.ends_with("version 0.10.0")),
         "{}",
         done.out
     );

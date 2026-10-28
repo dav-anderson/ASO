@@ -8,7 +8,7 @@
 //!   and whose other lines are the libraries it was built with (sp-wire,
 //!   mint-core, air), shown as `ecash-wallet/sp-wire` and so on. They are exact
 //!   when it was built with `--locked`.
-//! - **fsp-mint** (0.8.0 too) and **air_server** print no version. aso therefore keeps
+//! - **fsp-mint** (0.10.0 too) and **air_server** print no version. aso therefore keeps
 //!   its own record: when `aso install` or `aso upgrade` puts a binary in place
 //!   it writes the version (the release's, or the one `fsp.version` /
 //!   `air.version` names) and the SHA-256 of the file to

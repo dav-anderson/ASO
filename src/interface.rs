@@ -116,7 +116,7 @@ impl Managed for Program {
         !matches!(self, Program::Wallet)
     }
 
-    /// Only ecash-wallet prints its version; fsp-mint (0.8.0 too) and air_server
+    /// Only ecash-wallet prints its version; fsp-mint (0.10.0 too) and air_server
     /// are known by aso's record of the exact file.
     fn prints_version(self) -> bool {
         self == Program::Wallet

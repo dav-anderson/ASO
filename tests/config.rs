@@ -138,7 +138,7 @@ fn a_fee_set_in_the_environment_is_refused_too() {
 #[test]
 fn a_pin_on_a_release_candidate_is_refused_when_the_file_loads() {
     // Fails if an rc or a pre-release pin loads for fsp-mint or ecash-wallet.
-    for (section, version) in [("fsp", "0.9.0-rc1"), ("wallet", "0.8.0rc1")] {
+    for (section, version) in [("fsp", "0.11.0-rc1"), ("wallet", "0.9.0rc1")] {
         let p = problems(&format!("[{section}]\nversion = \"{version}\"\n"));
         assert_eq!(p.len(), 1, "{p:?}");
         assert!(
@@ -149,27 +149,37 @@ fn a_pin_on_a_release_candidate_is_refused_when_the_file_loads() {
         assert!(p[0].contains("never installed"), "{}", p[0]);
     }
     assert_eq!(
-        load(&scratch("pin"), "[fsp]\nversion = \"0.8.0\"\n").text("fsp.version"),
-        "0.8.0"
+        load(&scratch("pin"), "[fsp]\nversion = \"0.10.0\"\n").text("fsp.version"),
+        "0.10.0"
     );
 }
 
 #[test]
 fn a_pin_older_than_what_aso_needs_is_refused_and_air_version_is_only_a_note() {
-    // Fails if aso can be pinned to an fsp-mint without `export-esp
-    // --serve-only` or an ecash-wallet without `claim-psp` (0.8.0), or if
-    // air.version (the operator's words for a binary with no releases) is
-    // checked like a pin.
+    // Fails if aso can be pinned to an fsp-mint older than 0.10.0 or an
+    // ecash-wallet older than 0.9.0 (the first releases on wire version 5, with
+    // the shared keyset ID and the key check), or if air.version (the operator's
+    // words for a binary with no releases) is checked like a pin.
     for (section, version, needs) in [
         (
             "fsp",
-            "0.7.0",
-            "aso needs fsp-mint 0.8.0 or later (it uses `export-esp --serve-only`)",
+            "0.9.9",
+            "aso needs fsp-mint 0.10.0 or later (it needs wire version 5 and the keys it publishes)",
+        ),
+        (
+            "fsp",
+            "0.8.0",
+            "aso needs fsp-mint 0.10.0 or later (it needs wire version 5 and the keys it publishes)",
         ),
         (
             "wallet",
-            "0.7.2",
-            "aso needs ecash-wallet 0.8.0 or later (it uses `claim-psp`)",
+            "0.8.9",
+            "aso needs ecash-wallet 0.9.0 or later (it needs wire version 5 and the key check)",
+        ),
+        (
+            "wallet",
+            "0.8.0",
+            "aso needs ecash-wallet 0.9.0 or later (it needs wire version 5 and the key check)",
         ),
     ] {
         let p = problems(&format!("[{section}]\nversion = \"{version}\"\n"));
@@ -333,4 +343,61 @@ fn the_wallet_unpaid_key_days_default_to_90_and_reach_the_wallet() {
     assert_eq!(aso.whole("wallet.psp.unpaid_key_days"), 0);
     let wallet = generate::wallet_toml(&aso).unwrap();
     assert!(wallet.contains("[psp]\nunpaid_key_days = 0\n"), "{wallet}");
+}
+
+#[test]
+fn the_pins_at_the_new_minimums_load_and_the_ones_just_below_do_not() {
+    // Fails if the minimums are not exactly fsp-mint 0.10.0 and ecash-wallet 0.9.0
+    // (an off-by-one in the comparison would load 0.9.9 or refuse 0.10.0).
+    for (section, ok, below) in [("fsp", "0.10.0", "0.9.99"), ("wallet", "0.9.0", "0.8.99")] {
+        assert_eq!(
+            load(
+                &scratch("min-ok"),
+                &format!("[{section}]\nversion = \"{ok}\"\n")
+            )
+            .text(&format!("{section}.version")),
+            ok
+        );
+        let p = problems(&format!("[{section}]\nversion = \"{below}\"\n"));
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(p[0].contains("or later"), "{}", p[0]);
+    }
+    let (min, _) = aso::program::Program::Fsp.min_version().unwrap();
+    assert_eq!(min, "0.10.0");
+    let (min, _) = aso::program::Program::Wallet.min_version().unwrap();
+    assert_eq!(min, "0.9.0");
+}
+
+#[test]
+fn the_wallet_key_check_settings_default_off_and_1000_and_reach_the_wallet() {
+    // Fails if wallet.fsp.blacklist_on_key_mismatch or wallet.fsp.blacklist_max
+    // drift from ecash-wallet 0.9.0's defaults (false, 1000), are not live, are
+    // missing from `aso config show`, or a value set in aso.toml (a TOML boolean
+    // and a number) does not reach the wallet's own file as written.
+    let aso = load(&scratch("blacklist-default"), "");
+    let shown = aso.describe();
+    assert!(
+        shown.contains(
+            &"wallet.fsp.blacklist_on_key_mismatch = false  [default; reloads live]".to_string()
+        ),
+        "{shown:?}"
+    );
+    assert!(
+        shown.contains(&"wallet.fsp.blacklist_max = 1000  [default; reloads live]".to_string()),
+        "{shown:?}"
+    );
+    let wallet = generate::wallet_toml(&aso).unwrap();
+    assert!(
+        !wallet.contains("blacklist"),
+        "a default is not written: {wallet}"
+    );
+    let aso = load(
+        &scratch("blacklist-set"),
+        "[wallet.fsp]\nblacklist_on_key_mismatch = true\nblacklist_max = 5\n",
+    );
+    let wallet = generate::wallet_toml(&aso).unwrap();
+    assert!(
+        wallet.contains("[fsp]\nblacklist_max = 5\nblacklist_on_key_mismatch = true\n"),
+        "{wallet}"
+    );
 }
